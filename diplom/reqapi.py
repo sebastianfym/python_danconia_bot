@@ -1,10 +1,13 @@
 import requests
 import json
+import loader
+from loader import *
+
 
 class ReqApi:
     headers = {
         'x-rapidapi-host': "hotels4.p.rapidapi.com",
-        'x-rapidapi-key': "62c5d78a0emsha8c6701c0d448aap1cd356jsnc1df2847b15a"
+        'x-rapidapi-key': secret_key_api  # "62c5d78a0emsha8c6701c0d448aap1cd356jsnc1df2847b15a"
     }
 
     def __init__(self):
@@ -13,7 +16,7 @@ class ReqApi:
         self.finish_date = None
 
         self.picture_headers = {'x-rapidapi-host': "hotels4.p.rapidapi.com",
-                                'x-rapidapi-key': "a92314a369mshf18fa6dd365c4cep14ffb7jsnd9045564d68a"}
+                                'x-rapidapi-key': secret_key_pic}  # "a92314a369mshf18fa6dd365c4cep14ffb7jsnd9045564d68a"}
 
         self.picture_response = requests.request("GET", "https://hotels4.p.rapidapi.com/properties/get-hotel-photos",
                                                  headers=self.picture_headers, params={"id": "1178275040"}, timeout=10)
@@ -27,18 +30,19 @@ class ReqApi:
         query_string = {"query": city_name.lower(), "locale": "ru_RU"}
         response_for_destination_id = requests.request("GET", url, headers=self.headers,
                                                        params=query_string, timeout=10)
-
         data = ReqApi.data_in_json(response_for_destination_id)
         if data['moresuggestions'] == 0:
             return None
         else:
             return response_for_destination_id
 
-    def get_site_responce(self, city_name, start_date, finish_date):
+    def get_site_response(self, city_name, start_date, finish_date):
 
         url_for_hotels_list = "https://hotels4.p.rapidapi.com/properties/list"
         querystring_for_hotels_list = {
-            "destinationId": self.destination_id_founder(self.data_in_json(ReqApi.is_city_exists(self, city_name, start_date, finish_date))),
+            "destinationId": self.destination_id_founder(self.data_in_json(ReqApi.is_city_exists(self, city_name,
+                                                                                                 start_date,
+                                                                                                 finish_date))),
             "pageNumber": "1",
             "pageSize": "25",
             "checkIn": self.start_date, "checkOut": self.finish_date,
@@ -110,7 +114,8 @@ class ReqApi:
 
     def hotels_list_ret(self, param: dict) -> list:
         """
-        Данная функция служит для получения и возвращения полного списка отелей со всеми их показателями и т.д. в пределах города
+        Данная функция служит для получения и возвращения полного списка отелей со всеми их показателями и т.д. в
+        пределах города.
         """
         stack = list(param.items())
         while stack:
@@ -122,7 +127,8 @@ class ReqApi:
 
     def found_price(self, param: dict) -> list:
         """
-            Данная функция является вспомогательной , её работа заключается в формировании списка , в который входят имя отеля и его цена
+            Данная функция является вспомогательной , её работа заключается в формировании списка ,
+            в который входят имя отеля и его цена
         """
         hotel_list = list()
         for key, value in param.items():
@@ -150,7 +156,8 @@ class ReqApi:
 
     def low_price(self, param: list, max_hotels_count) -> list:
         """
-            Данная функция служит для нахождения указанного количества отелей с минимальной стоимостью за ночь в пределах города
+            Данная функция служит для нахождения указанного количества отелей с минимальной стоимостью за ночь в
+            пределах города
         """
 
         max_hotels = max_hotels_count
@@ -204,4 +211,3 @@ class ReqApi:
             return self.best_deal(param, max_hotels, min_price, max_price, permissible_range)
         else:
             return sort_suitable_price_list
-

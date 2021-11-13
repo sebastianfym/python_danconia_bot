@@ -4,29 +4,29 @@ import os
 import telebot
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 
+##TODO сделать проверки входящих от пользователя чисел. Пример : "вопрос: сколько отелей?   ответ: -10" , минусовых значений быть не должно!!! и т.д.
+
 load_dotenv()
-env_path = Path('.')/'.env'
+env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path)
 secret_key = os.getenv("key")
+secret_key_api = os.getenv('key_api')
+secret_key_pic = os.getenv('key_pic')
+
 
 config = {
     "name": "DanconiaTravelBot",
     "token": secret_key
 }
 
-
 pattern_city = r"\b\w{1,}\D\w{1,}\D\b"
 patter_max_hotels = r'\b\d\b'
 pattern_date = r'\d{4}[-]\d\d[-]\d\d'
 
-
 bot = telebot.TeleBot(config['token'])
-
 
 unique_dict_result = dict()
 user_dict_results = dict()
-
-
 
 
 @bot.message_handler(commands=['calendar'])

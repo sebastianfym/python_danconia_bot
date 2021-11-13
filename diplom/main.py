@@ -75,12 +75,18 @@ def performance_func(message):
     if control.check_low is True:
         if control.city_name is True:
             bot.city_name = message.text
-
             bot.send_message(message.chat.id, f'Введите максимальное количество отелей: ')
             control.count_hostels = True
             control.city_name = False
 
         elif control.count_hostels is True:
+            if int(message.text) <= 0:
+                bot.send_message(message.chat.id, "Введите корректное число.")
+                control.count_hostels = False
+                control.city_name = True
+                bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Санкт-Петербург):")
+                return
+
             bot.count_hotels = message.text
             bot.send_message(message.chat.id,
                              "Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
@@ -93,12 +99,17 @@ def performance_func(message):
     elif control.check_max is True:
         if control.city_name is True:
             bot.city_name = message.text
-
             bot.send_message(message.chat.id, f'Введите максимальное количество отелей: ')
             control.count_hostels = True
             control.city_name = False
 
         elif control.count_hostels is True:
+            if int(message.text) <= 0:
+                bot.send_message(message.chat.id, "Введите корректное число.")
+                control.count_hostels = False
+                control.city_name = True
+                bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Санкт-Петербург):")
+                return
             bot.count_hotels = message.text
             bot.send_message(message.chat.id,
                              "Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
@@ -108,7 +119,7 @@ def performance_func(message):
             control.check_max = False
             control.second_func = True
 
-    elif control.check_best_deal is True:
+    elif control.check_best_deal is True: ##TODO настроить корректный ввод данных по расстоянию , цене и т.д
         if control.city_name is True:
             bot.city_name = message.text
             bot.send_message(message.chat.id, f'Введите минимальную цену: ')
@@ -116,24 +127,45 @@ def performance_func(message):
             control.city_name = False
 
         elif control.min_price is True:
+            if int(message.text) <= 0:
+                # bot.send_message(message.chat.id, "Введите корректное число.")
+                # control.min_price = False
+                # control.check_best_deal = True
+                # bot.send_message(message.chat.id, f'Введите минимальную цену: ')
+                # return
+                handlers.check_property(message, control.min_price, control.check_best_deal)
+
             bot.min_price = message.text
             bot.send_message(message.chat.id, f'Введите максимальную цену: ')
             control.min_price = False
             control.max_price = True
 
         elif control.max_price is True:
+            if int(message.text) <= 0:
+                handlers.check_property(message, control.max_price, control.min_price)
+                # bot.send_message(message.chat.id, "Введите корректное число.")
+                # control.max_price = False
+                # control.min_price = True
+                # bot.send_message(message.chat.id, f'Введите минимальную цену: ')
+                # return
+
             bot.max_price = message.text
             bot.send_message(message.chat.id, f'Введите допустимое расстояние к центру: ')
             control.max_price = False
             control.length_to_center = True
 
         elif control.length_to_center is True:
+            if int(message.text) <= 0:
+                handlers.check_property(message, control.length_to_center, control.max_price)
+
             bot.length_to_center = message.text
             bot.send_message(message.chat.id, f'Введите максимальное количество отелей: ')
             control.length_to_center = False
             control.count_hostels = True
 
         elif control.count_hostels is True:
+            # if int(message.text) <= 0:
+            #     handlers.check_property(message, control.count_hostels, control.length_to_center)
             bot.count_hotels = message.text
             bot.send_message(message.chat.id,
                              "Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
