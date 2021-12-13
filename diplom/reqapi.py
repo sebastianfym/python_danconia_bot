@@ -1,37 +1,30 @@
 import requests
-import json
-import loader
 from loader import *
 
 
 class ReqApi:
-    headers = {
-        'x-rapidapi-host': "hotels4.p.rapidapi.com",
-        'x-rapidapi-key': secret_key_api
-    }
 
     def __init__(self):
         self.city_found = None
         self.start_date = None
         self.finish_date = None
 
-        self.picture_headers = {'x-rapidapi-host': "hotels4.p.rapidapi.com",
-                                'x-rapidapi-key': secret_key_pic}
 
-        self.picture_response = requests.request("GET", "https://hotels4.p.rapidapi.com/properties/get-hotel-photos",
-                                                 headers=self.picture_headers, params={"id": "1178275040"}, timeout=10)
-
-    def is_city_exists(self, city_name, start_date, finish_date):
+    def is_city_exists(self, city_name):
         """
         Метод для проверки существования города где делается соответствующий запрос.
         Если проверка проходит, то выполняется запрос по городу , если нет, то выводится соответствующее сообщение.
         """
         url = "https://hotels4.p.rapidapi.com/locations/search"
         query_string = {"query": city_name.lower(), "locale": "ru_RU"}
-        response_for_destination_id = requests.request("GET", url, headers=self.headers,
-                                                       params=query_string, timeout=10)
+        response_for_destination_id = requests.request("GET", url, headers=
+                                                        {
+                                                            'x-rapidapi-host': "hotels4.p.rapidapi.com",
+                                                            'x-rapidapi-key': secret_key_api
+                                                        },
+                                                        params=query_string, timeout=10)
+
         if int(response_for_destination_id.status_code) == 200:
-            data = ReqApi.data_in_json(response_for_destination_id)
             return response_for_destination_id
 
         elif int(response_for_destination_id.status_code) >= 400:
@@ -40,22 +33,23 @@ class ReqApi:
         elif int(response_for_destination_id.status_code) >= 500:
             raise "Ошибка сервера"
 
-
-    def get_site_response(self, city_name, start_date, finish_date):
+    def get_site_response(self, city_name):
 
         url_for_hotels_list = "https://hotels4.p.rapidapi.com/properties/list"
         querystring_for_hotels_list = {
-            "destinationId": self.destination_id_founder(self.data_in_json(ReqApi.is_city_exists(self, city_name,
-                                                                                                 start_date,
-                                                                                                 finish_date))),
+            "destinationId": self.destination_id_founder(self.data_in_json(ReqApi.is_city_exists(self, city_name))),
             "pageNumber": "1",
             "pageSize": "25",
             "checkIn": self.start_date, "checkOut": self.finish_date,
             "adults1": "1",
             "sortOrder": "PRICE",
             "locale": "ru_RU", "currency": "RUB"}
-        return ReqApi.data_in_json(requests.request("GET", url_for_hotels_list, headers=self.headers,
-                                                    params=querystring_for_hotels_list, timeout=10))
+        return ReqApi.data_in_json(requests.request("GET", url_for_hotels_list, headers=
+                                {
+                                    'x-rapidapi-host': "hotels4.p.rapidapi.com",
+                                    'x-rapidapi-key': secret_key_api
+                                },
+                                params=querystring_for_hotels_list, timeout=10))
 
     @staticmethod
     def data_pictures_in_json(response):
@@ -212,7 +206,6 @@ class ReqApi:
                 locale_check = True
 
         if locale_check is False:
-            print("Увы, но ничего не найдено. Может стоить расширить диапазон цен ?")
-            return self.best_deal(param, max_hotels, min_price, max_price, permissible_range)
+            return list()
         else:
             return sort_suitable_price_list
