@@ -3,8 +3,15 @@ from pathlib import Path
 import os
 import telebot
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
+from telebot import types
 
-##TODO сделать проверки входящих от пользователя чисел. Пример : "вопрос: сколько отелей?   ответ: -10" , минусовых значений быть не должно!!! и т.д.
+
+markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+button_yes = types.KeyboardButton("Да")
+button_no = types.KeyboardButton("Нет")
+
+markup.add(button_yes, button_no)
+
 
 load_dotenv()
 env_path = Path('.') / '.env'
@@ -13,15 +20,11 @@ secret_key = os.getenv("key")
 secret_key_api = os.getenv('key_api')
 secret_key_pic = os.getenv('key_pic')
 
-
 config = {
     "name": "DanconiaTravelBot",
     "token": secret_key
 }
 
-pattern_city = r"\b\w{1,}\D\w{1,}\D\b"
-patter_max_hotels = r'\b\d\b'
-pattern_date = r'\d{4}[-]\d\d[-]\d\d'
 
 bot = telebot.TeleBot(config['token'])
 
@@ -49,3 +52,4 @@ def cal(c):
         bot.edit_message_text(f"You selected {result}",
                               c.message.chat.id,
                               c.message.message_id)
+

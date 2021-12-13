@@ -7,7 +7,7 @@ from loader import *
 class ReqApi:
     headers = {
         'x-rapidapi-host': "hotels4.p.rapidapi.com",
-        'x-rapidapi-key': secret_key_api  # "62c5d78a0emsha8c6701c0d448aap1cd356jsnc1df2847b15a"
+        'x-rapidapi-key': secret_key_api
     }
 
     def __init__(self):
@@ -16,7 +16,7 @@ class ReqApi:
         self.finish_date = None
 
         self.picture_headers = {'x-rapidapi-host': "hotels4.p.rapidapi.com",
-                                'x-rapidapi-key': secret_key_pic}  # "a92314a369mshf18fa6dd365c4cep14ffb7jsnd9045564d68a"}
+                                'x-rapidapi-key': secret_key_pic}
 
         self.picture_response = requests.request("GET", "https://hotels4.p.rapidapi.com/properties/get-hotel-photos",
                                                  headers=self.picture_headers, params={"id": "1178275040"}, timeout=10)
@@ -30,11 +30,16 @@ class ReqApi:
         query_string = {"query": city_name.lower(), "locale": "ru_RU"}
         response_for_destination_id = requests.request("GET", url, headers=self.headers,
                                                        params=query_string, timeout=10)
-        data = ReqApi.data_in_json(response_for_destination_id)
-        if data['moresuggestions'] == 0:
-            return None
-        else:
+        if int(response_for_destination_id.status_code) == 200:
+            data = ReqApi.data_in_json(response_for_destination_id)
             return response_for_destination_id
+
+        elif int(response_for_destination_id.status_code) >= 400:
+            raise "Ошибка клиента"
+
+        elif int(response_for_destination_id.status_code) >= 500:
+            raise "Ошибка сервера"
+
 
     def get_site_response(self, city_name, start_date, finish_date):
 

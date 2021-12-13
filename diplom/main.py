@@ -6,11 +6,6 @@ from telebot import types
 bot = loader.bot
 control = ControlBot()
 
-markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-button_yes = types.KeyboardButton("Да")
-button_no = types.KeyboardButton("Нет")
-
-markup.add(button_yes, button_no)
 
 
 @bot.message_handler(func=lambda message: message.text.lower() == "/help" or message.text.lower() == "привет"
@@ -90,7 +85,7 @@ def performance_func(message):
             bot.count_hotels = message.text
             bot.send_message(message.chat.id,
                              "Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
-                             "то введите желаемое количество фотографий", reply_markup=markup)
+                             "то введите желаемое количество фотографий", reply_markup=loader.markup)
 
             control.count_hostels = False
             control.check_low = False
@@ -113,13 +108,13 @@ def performance_func(message):
             bot.count_hotels = message.text
             bot.send_message(message.chat.id,
                              "Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
-                             "то введите желаемое количество фотографий", reply_markup=markup)
+                             "то введите желаемое количество фотографий", reply_markup=loader.markup)
 
             control.count_hostels = False
             control.check_max = False
             control.second_func = True
 
-    elif control.check_best_deal is True: ##TODO настроить корректный ввод данных по расстоянию , цене и т.д
+    elif control.check_best_deal is True:
         if control.city_name is True:
             bot.city_name = message.text
             bot.send_message(message.chat.id, f'Введите минимальную цену: ')
@@ -128,11 +123,6 @@ def performance_func(message):
 
         elif control.min_price is True:
             if int(message.text) <= 0:
-                # bot.send_message(message.chat.id, "Введите корректное число.")
-                # control.min_price = False
-                # control.check_best_deal = True
-                # bot.send_message(message.chat.id, f'Введите минимальную цену: ')
-                # return
                 handlers.check_property(message, control.min_price, control.check_best_deal)
 
             bot.min_price = message.text
@@ -143,12 +133,6 @@ def performance_func(message):
         elif control.max_price is True:
             if int(message.text) <= 0:
                 handlers.check_property(message, control.max_price, control.min_price)
-                # bot.send_message(message.chat.id, "Введите корректное число.")
-                # control.max_price = False
-                # control.min_price = True
-                # bot.send_message(message.chat.id, f'Введите минимальную цену: ')
-                # return
-
             bot.max_price = message.text
             bot.send_message(message.chat.id, f'Введите допустимое расстояние к центру: ')
             control.max_price = False
@@ -164,12 +148,10 @@ def performance_func(message):
             control.count_hostels = True
 
         elif control.count_hostels is True:
-            # if int(message.text) <= 0:
-            #     handlers.check_property(message, control.count_hostels, control.length_to_center)
             bot.count_hotels = message.text
             bot.send_message(message.chat.id,
                              "Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
-                             "то введите желаемое количество фотографий", reply_markup=markup)
+                             "то введите желаемое количество фотографий", reply_markup=loader.markup)
 
             control.count_hostels = False
             control.check_best_deal = False
@@ -180,4 +162,4 @@ def performance_func(message):
         handlers.min_price_execute(message, bot.city_name, bot.count_hotels)
 
 
-bot.polling(none_stop=True, interval=0)
+bot.polling(none_stop=True, interval=0, timeout=5)
