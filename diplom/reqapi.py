@@ -24,6 +24,8 @@ class ReqApi:
                                                         },
                                                         params=query_string, timeout=10)
 
+
+
         if int(response_for_destination_id.status_code) == 200:
             return response_for_destination_id
 
@@ -32,6 +34,9 @@ class ReqApi:
 
         elif int(response_for_destination_id.status_code) >= 500:
             raise "Ошибка сервера"
+
+        elif int(response_for_destination_id.timeout) >= 10:
+            raise TimeoutError
 
     def get_site_response(self, city_name):
 
@@ -44,12 +49,15 @@ class ReqApi:
             "adults1": "1",
             "sortOrder": "PRICE",
             "locale": "ru_RU", "currency": "RUB"}
+
+
         return ReqApi.data_in_json(requests.request("GET", url_for_hotels_list, headers=
                                 {
                                     'x-rapidapi-host': "hotels4.p.rapidapi.com",
                                     'x-rapidapi-key': secret_key_api
-                                },
-                                params=querystring_for_hotels_list, timeout=10))
+                                }, params=querystring_for_hotels_list, timeout=10))
+
+
 
     @staticmethod
     def data_pictures_in_json(response):

@@ -197,6 +197,8 @@ def send_picture(message, max_count_pic):
                                                  headers={'x-rapidapi-host': "hotels4.p.rapidapi.com",
                                                           'x-rapidapi-key': loader.secret_key_pic}, params={"id": "1178275040"},
                                                  timeout=10))):
+        if timeout > 10:
+           raise TimeoutError
         bot.send_photo(message.chat.id, picture_url)
         counter += 1
         if counter == max_count_pic:
