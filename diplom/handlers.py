@@ -195,16 +195,13 @@ def send_picture(message, max_count_pic):
     counter = 0
     for picture_url in body_req.pars_picture_dict(body_req.data_pictures_in_json(requests.request("GET", "https://hotels4.p.rapidapi.com/properties/get-hotel-photos",
                                                  headers={'x-rapidapi-host': "hotels4.p.rapidapi.com",
-                                                          'x-rapidapi-key': loader.secret_key_pic}, params={"id": "1178275040"},
-                                                 timeout=10))):
+                                                          'x-rapidapi-key': loader.secret_key_pic}, params={"id": "1178275040"}))):
         bot.send_photo(message.chat.id, picture_url)
         counter += 1
         if counter == max_count_pic:
             break
 
 
-def check_property(message, first_check, sec_check):
-    first_check = False
-    sec_check = True
+def check_property(message):
     bot.send_message(message.chat.id, "Введите корректное число: ")
     return

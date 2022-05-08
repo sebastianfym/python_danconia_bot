@@ -15,23 +15,33 @@ class ReqApi:
         Метод для проверки существования города где делается соответствующий запрос.
         Если проверка проходит, то выполняется запрос по городу , если нет, то выводится соответствующее сообщение.
         """
-        url = "https://hotels4.p.rapidapi.com/locations/search"
-        query_string = {"query": city_name.lower(), "locale": "ru_RU"}
-        response_for_destination_id = requests.request("GET", url, headers=
-                                                        {
-                                                            'x-rapidapi-host': "hotels4.p.rapidapi.com",
-                                                            'x-rapidapi-key': secret_key_api
-                                                        },
-                                                        params=query_string, timeout=10)
+        try:
+            url = "https://hotels4.p.rapidapi.com/locations/search"
+            query_string = {"query": city_name.lower(), "locale": "ru_RU"}
+            response_for_destination_id = requests.request("GET", url, headers=
+                                                            {
+                                                                'x-rapidapi-host': "hotels4.p.rapidapi.com",
+                                                                'x-rapidapi-key': secret_key_api
+                                                            },
+                                                            params=query_string, timeout=10)
 
-        if int(response_for_destination_id.status_code) == 200:
-            return response_for_destination_id
 
-        elif int(response_for_destination_id.status_code) >= 400:
-            raise "Ошибка клиента"
 
-        elif int(response_for_destination_id.status_code) >= 500:
-            raise "Ошибка сервера"
+            # if int(response_for_destination_id.status_code) == 200:
+            #     return response_for_destination_id
+            #
+            # elif int(response_for_destination_id.status_code) >= 400:
+            #     raise "Ошибка клиента"
+            #
+            # elif int(response_for_destination_id.status_code) >= 500:
+            #     raise "Ошибка сервера"
+            #
+            # elif int(response_for_destination_id.timeout) >= 10:
+            #     raise TimeoutError
+            if response_for_destination_id.status_code == requests.codes.ok:
+                return response_for_destination_id
+        except TimeoutError:
+            return TimeoutError
 
     def get_site_response(self, city_name):
 
@@ -44,12 +54,15 @@ class ReqApi:
             "adults1": "1",
             "sortOrder": "PRICE",
             "locale": "ru_RU", "currency": "RUB"}
+
+
         return ReqApi.data_in_json(requests.request("GET", url_for_hotels_list, headers=
                                 {
                                     'x-rapidapi-host': "hotels4.p.rapidapi.com",
                                     'x-rapidapi-key': secret_key_api
-                                },
-                                params=querystring_for_hotels_list, timeout=10))
+                                }, params=querystring_for_hotels_list, timeout=10))
+
+
 
     @staticmethod
     def data_pictures_in_json(response):
@@ -58,10 +71,17 @@ class ReqApi:
         Затем происходит открытие созданного файла в режиме "чтения" и происходит выгрузка данных
         из файла в словарь
         """
-        if response.status_code == 200:
-            data = response.json()
-            return data
-        else:
+
+        # if response.status_code == 200:
+        #     data = response.json()
+        #     return data
+        # else:
+        #     return None
+        try:
+            if response.status_code == requests.codes.ok:
+                data = response.json()
+                return data
+        except BaseException:
             return None
 
     def pars_picture_dict(self, data_pictures_in_json):
@@ -90,10 +110,16 @@ class ReqApi:
         Затем происходит открытие созданного файла в режиме "чтения" и происходит выгрузка данных
         из файла в словарь
         """
-        if response.status_code == 200:
-            data = response.json()
-            return data
-        else:
+        # if response.status_code == 200:
+        #     data = response.json()
+        #     return data
+        # else:
+        #     return None
+        try:
+            if response.status_code == requests.codes.ok:
+                data = response.json()
+                return data
+        except BaseException:
             return None
 
     def destination_id_founder(self, param: dict) -> str:

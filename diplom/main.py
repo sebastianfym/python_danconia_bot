@@ -7,6 +7,7 @@ bot = loader.bot
 control = ControlBot()
 
 
+
 @bot.message_handler(commands=['calendar'])
 def start(m):
     calendar, step = DetailedTelegramCalendar().build()
@@ -90,123 +91,15 @@ def continue_work(message):
 
 @bot.message_handler(content_types=['text', 'number'])
 def performance_func(message):
-    # stm.cycle()
+    user = Users.get_user(message.chat.id)
     if control.check_low is True:
-        user = Users.get_user(message.chat.id)
-
-        if user.command is not dict():
-            user.command = dict()
-
-        user.command['/lowprice'] = dict()
-
-        if control.city_name is True:
-            if message.text not in user.command['/lowprice']:
-                user.command['/lowprice'][f"{message.text}"] = dict()
-            bot.city_name = message.text
-            bot.send_message(message.chat.id, f'Введите максимальное количество отелей: ')
-            control.count_hostels = True
-            control.city_name = False
-
-        elif control.count_hostels is True:
-            if int(message.text) <= 0:
-                bot.send_message(message.chat.id, "Введите корректное число.")
-                control.count_hostels = False
-                control.city_name = True
-                bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Санкт-Петербург):")
-                return
-
-            bot.count_hotels = message.text
-            bot.send_message(message.chat.id,
-                             f"Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
-                             "то введите желаемое количество фотографий\n", reply_markup=loader.markup)
-
-            control.count_hostels = False
-            control.check_low = False
-            control.first_func = True
+        loader.low_func_accomplishemnt(message, user, control)
 
     elif control.check_max is True:
-
-        if control.city_name is True:
-            user = Users.get_user(message.chat.id)
-            if user.command is not dict():
-                user.command = dict()
-
-            user.command['/highprice'] = dict()
-            if message.text not in user.command['/highprice']:
-                user.command['/highprice'][f"{message.text}"] = dict()
-            bot.city_name = message.text
-            bot.send_message(message.chat.id, f'Введите максимальное количество отелей: ')
-            control.count_hostels = True
-            control.city_name = False
-
-        elif control.count_hostels is True:
-            if int(message.text) <= 0:
-                bot.send_message(message.chat.id, "Введите корректное число.")
-                control.count_hostels = False
-                control.city_name = True
-                bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Санкт-Петербург):")
-                return
-
-            bot.count_hotels = message.text
-            bot.send_message(message.chat.id,
-                             "Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
-                             "то введите желаемое количество фотографий", reply_markup=loader.markup)
-
-            control.count_hostels = False
-            control.check_max = False
-            control.second_func = True
+        loader.max_func_accomplishment(message, user, control)
 
     elif control.check_best_deal is True:
-        if control.city_name is True:
-
-            user = Users.get_user(message.chat.id)
-            if user.command is not dict():
-                user.command = dict()
-
-            user.command['/bestdeal'] = dict()
-            if message.text not in user.command['/bestdeal']:
-                user.command['/bestdeal'][f"{message.text}"] = dict()
-
-            bot.city_name = message.text
-            bot.send_message(message.chat.id, f'Введите минимальную цену: ')
-            control.min_price = True
-            control.city_name = False
-
-        elif control.min_price is True:
-            if int(message.text) <= 0:
-                handlers.check_property(message, control.min_price, control.check_best_deal)
-
-            bot.min_price = message.text
-            bot.send_message(message.chat.id, f'Введите максимальную цену: ')
-            control.min_price = False
-            control.max_price = True
-
-        elif control.max_price is True:
-            if int(message.text) <= 0:
-                handlers.check_property(message, control.max_price, control.min_price)
-            bot.max_price = message.text
-            bot.send_message(message.chat.id, f'Введите допустимое расстояние к центру: ')
-            control.max_price = False
-            control.length_to_center = True
-
-        elif control.length_to_center is True:
-            if int(message.text) <= 0:
-                handlers.check_property(message, control.length_to_center, control.max_price)
-
-            bot.length_to_center = message.text
-            bot.send_message(message.chat.id, f'Введите максимальное количество отелей: ')
-            control.length_to_center = False
-            control.count_hostels = True
-
-        elif control.count_hostels is True:
-            bot.count_hotels = message.text
-            bot.send_message(message.chat.id,
-                             "Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
-                             "то введите желаемое количество фотографий", reply_markup=loader.markup)
-
-            control.count_hostels = False
-            control.check_best_deal = False
-            control.third_func = True
+        loader.best_deal_func_accomplishment(message, user, control)
 
     elif control.check_picture is True:
         handlers.send_picture(message, int(message.text.split(" ")[0]))
@@ -220,5 +113,4 @@ def performance_func(message):
 # - timeout: integer (default 20) - Timeout in seconds for long polling.
 # - allowed_updates: List of Strings (default None) - List of update types to request
 """
-bot.infinity_polling(interval=0, timeout=10) #TODO это решает вопрос с timeout?
-
+bot.infinity_polling(interval=0, timeout=10)
