@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import telebot
 from telebot import types
+import requests
 
 
 markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -96,6 +97,7 @@ def max_func_accomplishment(message, user, control):
         control.check_max = False
         control.second_func = True
 
+
 def best_deal_func_accomplishment(message, user, control):
     if control.city_name is True:
 
@@ -113,33 +115,46 @@ def best_deal_func_accomplishment(message, user, control):
         control.city_name = False
 
     elif control.min_price is True:
+        min_price = message.text
         if int(message.text) <= 0:
-            handlers.check_property(message)
+            # handlers.check_property(message)
+            min_price = abs(int(message.text))
+        bot.min_price = min_price #message.text
 
-        bot.min_price = message.text
         bot.send_message(message.chat.id, f'Введите максимальную цену: ')
         control.min_price = False
         control.max_price = True
 
     elif control.max_price is True:
+        max_price = message.text
         if int(message.text) <= 0:
-            handlers.check_property(message)
-        bot.max_price = message.text
+            # handlers.check_property(message)
+            max_price = abs(int(message.text))
+        bot.max_price = max_price #message.text
+
         bot.send_message(message.chat.id, f'Введите допустимое расстояние к центру: ')
         control.max_price = False
         control.length_to_center = True
 
     elif control.length_to_center is True:
+        length_to_center = message.text
         if int(message.text) <= 0:
-            handlers.check_property(message)
+            # handlers.check_property(message)
+            length_to_center = abs(int(message.text))
+        bot.length_to_center = length_to_center #message.text
 
-        bot.length_to_center = message.text
         bot.send_message(message.chat.id, f'Введите максимальное количество отелей: ')
         control.length_to_center = False
         control.count_hostels = True
 
     elif control.count_hostels is True:
-        bot.count_hotels = message.text
+        count_hostels = message.text
+        if int(message.text) <= 0:
+            # handlers.check_property(message)
+            count_hostels = abs(int(message.text))
+        # bot.length_to_center = length_to_center #message.text
+
+        bot.count_hotels = count_hostels #message.text
         bot.send_message(message.chat.id,
                          "Хотите ли вы увидеть фотографии отелей?\n\"Да/Нет\"\nЕсли Ваш выбор \'Да\',"
                          "то введите желаемое количество фотографий", reply_markup=markup)#loader.markup)
@@ -147,3 +162,12 @@ def best_deal_func_accomplishment(message, user, control):
         control.count_hostels = False
         control.check_best_deal = False
         control.third_func = True
+
+
+def request_to_api(request_type, url, headers, querystring):
+    try:
+        response = requests.request(request_type, url, headers=headers, params=querystring, timeout=10)
+        if response.status_code == requests.codes.ok:
+            return response
+    except TimeoutError:
+        return TimeoutError
