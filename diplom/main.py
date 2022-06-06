@@ -7,7 +7,6 @@ bot = loader.bot
 control = ControlBot()
 
 
-
 @bot.message_handler(commands=['calendar'])
 def start(m):
     calendar, step = DetailedTelegramCalendar().build()
@@ -76,16 +75,16 @@ def print_user_picture(message):
 def continue_work(message):
     bot.send_message(message.chat.id, "Как пожелаете.")
     if control.first_func is True:
-        handlers.min_price_execute(message, bot.city_name, bot.count_hotels, start(message), start(message))
+        handlers.min_price_execute(message, bot.city_name, bot.count_hotels, start(message), start(message), False, 0)
         control.first_func = False
 
     elif control.second_func is True:
-        handlers.max_price_execute(message, bot.city_name, bot.count_hotels, start(message), start(message))
+        handlers.max_price_execute(message, bot.city_name, bot.count_hotels, start(message), start(message), False, 0)
         control.second_func = False
 
     elif control.third_func is True:
         handlers.best_price_execute(message, bot.city_name, bot.min_price, bot.max_price, bot.length_to_center,
-                                    bot.count_hotels, start(message), start(message))
+                                    bot.count_hotels, start(message), start(message), False, 0)
         control.third_func = False
 
 
@@ -102,15 +101,21 @@ def performance_func(message):
         loader.best_deal_func_accomplishment(message, user, control)
 
     elif control.check_picture is True:
-        handlers.send_picture(message, int(message.text.split(" ")[0]))
-        handlers.min_price_execute(message, bot.city_name, bot.count_hotels, start(message), start(
-            message))
+        if control.first_func is True:
+            control.max_count_pic = int(message.text.split(" ")[0])
+            handlers.min_price_execute(message, bot.city_name, bot.count_hotels, start(message), start(message), True,
+                                       control.max_count_pic)
+            control.first_func = False
+        elif control.second_func is True:
+            control.max_count_pic = int(message.text.split(" ")[0])
+            handlers.max_price_execute(message, bot.city_name, bot.count_hotels, start(message), start(message), True,
+                                       control.max_count_pic)
+            control.second_func = False
+        elif control.third_func is True:
+            control.max_count_pic = int(message.text.split(" ")[0])
+            handlers.best_price_execute(message, bot.city_name, bot.min_price, bot.max_price, bot.length_to_center,
+                                        bot.count_hotels, start(message), start(message), True, control.max_count_pic)
+            control.third_func = True
 
 
-"""
-# Upon calling this function, TeleBot starts polling the Telegram servers for new messages.
-# - interval: int (default 0) - The interval between polling requests
-# - timeout: integer (default 20) - Timeout in seconds for long polling.
-# - allowed_updates: List of Strings (default None) - List of update types to request
-"""
 bot.infinity_polling(interval=0, timeout=10)
