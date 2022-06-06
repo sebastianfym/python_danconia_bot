@@ -1,5 +1,4 @@
 import requests
-
 from reqapi import ReqApi
 import loader
 
@@ -24,6 +23,12 @@ class ControlBot:
         self.first_func = False
         self.second_func = False
         self.third_func = False
+
+        self.counter_index_hotel_in_list = None
+
+        self.max_count_pic = None
+
+        self.destination_id_list = []
 
 
 class Users:
@@ -60,8 +65,15 @@ unique_dict_result = loader.unique_dict_result
 user_dict_results = loader.user_dict_results
 
 
-def watch_result(message):
+def processing_name_handlers_id_list_func(city_name):
+    body_req = ReqApi()
+    city_exists = body_req.is_city_exists(city_name)
+    if city_exists:
+        destination_id_list = body_req.destination_id_founder_func(body_req.data_in_json(city_exists))
+        return destination_id_list
 
+
+def watch_result(message):
     if message.from_user.id not in user_dict_results:
         bot.send_message(message.chat.id, 'Вы пока-еще не делали запросов. Попробуйте попозже.')
         return None
@@ -85,31 +97,54 @@ def description_commands(message):
                                       "которые делали раньше")
 
 
-def check_and_append(message, price_condition, user_dict, cycle_elem):
+def send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_list):
+    body_req = ReqApi()
+    counter = 0
+    hotel_id = hotels_id_list[counter_index_hotel_in_list]
+
+    if body_req.data_pictures_in_json(
+            requests.request("GET", "https://hotels4.p.rapidapi.com/properties/get-hotel-photos",
+                             headers={'x-rapidapi-host': "hotels4.p.rapidapi.com",
+                                      'x-rapidapi-key': loader.secret_key_pic}, params={"id": hotel_id})) is not None:
+        hotels_photo = body_req.pars_picture_dict(body_req.data_pictures_in_json(requests.request("GET",
+                                                                                                  "https://hotels4.p.rapidapi.com/properties/get-hotel-photos",
+                                                                                                  headers={
+                                                                                                      'x-rapidapi-host': "hotels4.p.rapidapi.com",
+                                                                                                      'x-rapidapi-key': loader.secret_key_pic},
+                                                                                                  params={
+                                                                                                      "id": hotel_id})))
+        for picture_url in hotels_photo:
+            bot.send_photo(message.chat.id, picture_url)
+            counter += 1
+            if counter == max_count_pic:
+                break
+    else:
+        bot.send_message(message.chat.id, 'Для этого отеля я фотографий не нашел :C')
+
+
+def check_and_append(message, price_condition, user_dict, cycle_elem, counter_index_hotel_in_list, check_picture,
+                     max_count_pic, hotels_id_list):
+    check_picture = check_picture
     if price_condition not in user_dict_results[message.from_user.id]:
         user_dict_results[message.from_user.id][price_condition] = []
-        bot.send_message(message.chat.id,
-                         f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])} "
-                         f"руб/сутки")
-        user_dict_results[message.from_user.id][price_condition].append(
-            f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])} "
-            f"руб/сутки")
-        return user_dict
 
-    else:
-        bot.send_message(message.chat.id,
-                         f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])} "
-                         f"руб/сутки")
-        user_dict_results[message.from_user.id][price_condition].append(
-            f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])} "
-            f"руб/сутки")
-        return user_dict
+    bot.send_message(message.chat.id,
+                     f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])} "
+                     f"руб/сутки")
+
+    if check_picture is True:
+        send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_list)
+
+    user_dict_results[message.from_user.id][price_condition].append(
+        f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])} "
+        f"руб/сутки")
+    return user_dict
 
 
-def min_price_execute(message, city_name, count_hotels, cal_star, cal_finish):
+def min_price_execute(message, city_name, count_hotels, cal_star, cal_finish, check_picture, max_count_pic):
     control.check_low = False
     max_hotels = count_hotels
-
+    check_picture = check_picture
     body_req = ReqApi()
     body_req.city_found = city_name
 
@@ -117,6 +152,8 @@ def min_price_execute(message, city_name, count_hotels, cal_star, cal_finish):
     body_req.finish_date = cal_finish
 
     city_exists = body_req.get_site_response(body_req.city_found)
+    hotels_id_list = processing_name_handlers_id_list_func(city_name)
+
     if city_exists is None:
         bot.send_message(message.chat.id, "В моем списке нет такого города , попробуйте заново.")
         return None
@@ -124,12 +161,15 @@ def min_price_execute(message, city_name, count_hotels, cal_star, cal_finish):
         returned_all_hotels_list = body_req.hotels_list_ret(city_exists)
         if message.from_user.id not in user_dict_results:
             user_dict_results[message.from_user.id] = {}
+
+        counter = 0
         for low_elem in body_req.low_price(returned_all_hotels_list, max_hotels):
-            check_and_append(message, "/lowprice", user_dict_results, low_elem)
+            check_and_append(message, "/lowprice", user_dict_results, low_elem, counter, check_picture, max_count_pic,
+                             hotels_id_list)
+            counter += 1
 
 
-
-def max_price_execute(message, city_name, count_hotels, cal_star, cal_finish):
+def max_price_execute(message, city_name, count_hotels, cal_star, cal_finish, check_picture, max_count_pic):
     control.check_max = False
     max_hotels = count_hotels
 
@@ -139,6 +179,7 @@ def max_price_execute(message, city_name, count_hotels, cal_star, cal_finish):
     body_req.finish_date = cal_finish
 
     city_exists = body_req.get_site_response(body_req.city_found)
+    hotels_id_list = processing_name_handlers_id_list_func(city_name)
 
     if city_exists is None:
         bot.send_message(message.chat.id, "В моем списке нет такого города , попробуйте заново.")
@@ -148,20 +189,28 @@ def max_price_execute(message, city_name, count_hotels, cal_star, cal_finish):
 
         if message.from_user.id not in user_dict_results:
             user_dict_results[message.from_user.id] = {}
+
+        counter = 0
         for high_elem in body_req.high_price(returned_all_hotels_list, max_hotels):
-            check_and_append(message, "/highprice", user_dict_results, high_elem)
+            check_and_append(message, "/highprice", user_dict_results, high_elem, counter, check_picture, max_count_pic,
+                             hotels_id_list)
+            counter += 1
 
 
-def best_price_execute(message, city_name, min_price, max_price, length_to_center, count_hotels, cal_star, cal_finish):
+def best_price_execute(message, city_name, min_price, max_price, length_to_center, count_hotels, cal_star, cal_finish,
+                       check_picture, max_count_pic):
     city, min_price, max_price, permissible_range, max_hotels = city_name, min_price, max_price, length_to_center, \
                                                                 count_hotels
 
     control.check_best_deal = False
-
+    check_picture = check_picture
     body_req = ReqApi()
     body_req.city_found = city
     body_req.start_date, body_req.finish_date = cal_star, cal_finish
+
     city_exists = body_req.get_site_response(body_req.city_found)
+    hotels_id_list = processing_name_handlers_id_list_func(city_name)
+
     returned_all_hotels_list = body_req.hotels_list_ret(city_exists)
     if city_exists is None or len(returned_all_hotels_list) == 0:
         bot.send_message(message.chat.id, "В моем списке нет подходящего варианта, попробуйте заново.")
@@ -173,33 +222,21 @@ def best_price_execute(message, city_name, min_price, max_price, length_to_cente
         if len(body_req.best_deal(returned_all_hotels_list, max_hotels, min_price, max_price, permissible_range)) == 0:
             bot.send_message(message.chat.id, 'К сожалению по вашему запросу ничего не найдено.')
 
+        counter = 0
         for best_elem in body_req.best_deal(returned_all_hotels_list, max_hotels, min_price, max_price,
                                             permissible_range):
             if '/bestdeal' not in user_dict_results[message.from_user.id]:
                 user_dict_results[message.from_user.id]['/bestdeal'] = []
-                bot.send_message(message.chat.id, f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
-                                                  f"\nРасстояние к центру {best_elem[2]} км.")
-                user_dict_results[message.from_user.id]['/bestdeal'].append(f"Отель: {best_elem[0]}.\n"
-                                                                            f"Цена: {best_elem[1]['price']} руб/сутки."
-                                                                            f"\nРасстояние к центру {best_elem[2]} км.")
-            else:
-                bot.send_message(message.chat.id, f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
-                                                  f"\nРасстояние к центру {best_elem[2]} км.")
-                user_dict_results[message.from_user.id]['/bestdeal'].append(f"Отель: {best_elem[0]}.\n"
-                                                                            f"Цена: {best_elem[1]['price']} руб/сутки."
-                                                                            f"\nРасстояние к центру {best_elem[2]} км.")
 
+            if check_picture is True:
+                send_picture(message, max_count_pic, counter, hotels_id_list)
 
-def send_picture(message, max_count_pic):
-    body_req = ReqApi()
-    counter = 0
-    for picture_url in body_req.pars_picture_dict(body_req.data_pictures_in_json(requests.request("GET", "https://hotels4.p.rapidapi.com/properties/get-hotel-photos",
-                                                 headers={'x-rapidapi-host': "hotels4.p.rapidapi.com",
-                                                          'x-rapidapi-key': loader.secret_key_pic}, params={"id": "1178275040"}))):
-        bot.send_photo(message.chat.id, picture_url)
-        counter += 1
-        if counter == max_count_pic:
-            break
+            bot.send_message(message.chat.id, f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
+                                              f"\nРасстояние к центру {best_elem[2]} км.")
+            user_dict_results[message.from_user.id]['/bestdeal'].append(f"Отель: {best_elem[0]}.\n"
+                                                                        f"Цена: {best_elem[1]['price']} руб/сутки."
+                                                                        f"\nРасстояние к центру {best_elem[2]} км.")
+            counter += 1
 
 
 def check_property(message):
