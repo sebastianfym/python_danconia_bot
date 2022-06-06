@@ -1,42 +1,29 @@
-import loader
-import requests
-from loader import *
+from config_data.config import secret_key_api
+from loader.loader import *
 
 
 class ReqApi:
+    destination_id_list = []
 
     def __init__(self):
         self.city_found = None
         self.start_date = None
         self.finish_date = None
 
+    def destination_id_founder_func(self, dictionary):
+        if isinstance(dictionary["suggestions"], list):
+            if isinstance(dictionary["suggestions"][1], dict):
+                if isinstance((dictionary["suggestions"][1]['entities']), list):
+                    for elem in dictionary["suggestions"][1]['entities']:
+                        if elem:
+                            self.destination_id_list.append(elem['destinationId'])
+        return self.destination_id_list
 
     def is_city_exists(self, city_name):
         """
         Метод для проверки существования города где делается соответствующий запрос.
         Если проверка проходит, то выполняется запрос по городу , если нет, то выводится соответствующее сообщение.
         """
-        # try:
-        #     url = "https://hotels4.p.rapidapi.com/locations/search"
-        #     query_string = {"query": city_name.lower(), "locale": "ru_RU"}
-        #     headers = {
-        #                 'x-rapidapi-host': "hotels4.p.rapidapi.com",
-        #                 'x-rapidapi-key': secret_key_api
-        #               }
-        #     response_for_destination_id = requests.request("GET", url, headers=
-        #                                                     {
-        #                                                         'x-rapidapi-host': "hotels4.p.rapidapi.com",
-        #                                                         'x-rapidapi-key': secret_key_api
-        #                                                     },
-        #                                                     params=query_string, timeout=10)
-        #
-
-
-        #     if response_for_destination_id.status_code == requests.codes.ok:
-        #         print(response_for_destination_id, '<---- response_for_destination_id')
-        #         return response_for_destination_id
-        # except TimeoutError:
-        #     return TimeoutError
 
         url = "https://hotels4.p.rapidapi.com/locations/search"
         headers = {
@@ -44,48 +31,27 @@ class ReqApi:
             'x-rapidapi-key': secret_key_api
         }
         query_string = {"query": city_name.lower(), "locale": "ru_RU"}
-        response = loader.request_to_api("GET", url, headers, query_string)
+        response = request_to_api("GET", url, headers, query_string)
         return response
 
     def get_site_response(self, city_name):
-
         url_for_hotels_list = "https://hotels4.p.rapidapi.com/properties/list"
         city_exists = ReqApi.is_city_exists(self, city_name)
         if city_exists:
             querystring_for_hotels_list = {
-                "destinationId": self.destination_id_founder(self.data_in_json(city_exists)),#ReqApi.is_city_exists(self, city_name))),
+                "destinationId": self.destination_id_founder(self.data_in_json(city_exists)),
                 "pageNumber": "1",
                 "pageSize": "25",
                 "checkIn": self.start_date, "checkOut": self.finish_date,
                 "adults1": "1",
                 "sortOrder": "PRICE",
                 "locale": "ru_RU", "currency": "RUB"}
-        #     try:
-        #         # return ReqApi.data_in_json(requests.request("GET", url_for_hotels_list, headers=
-        #         #                         {
-        #         #                             'x-rapidapi-host': "hotels4.p.rapidapi.com",
-        #         #                             'x-rapidapi-key': secret_key_api
-        #         #                         }, params=querystring_for_hotels_list, timeout=10))
-        #         site_response_request = requests.request("GET", url_for_hotels_list, headers=
-        #                         {
-        #                             'x-rapidapi-host': "hotels4.p.rapidapi.com",
-        #                             'x-rapidapi-key': secret_key_api
-        #                         }, params=querystring_for_hotels_list, timeout=10)
-        #
-        #         if site_response_request.status_code == requests.codes.ok:
-        #             print()
-        #             return ReqApi.data_in_json(site_response_request)
-        #     except TimeoutError:
-        #         raise TimeoutError
-        # else:
-        #     return SystemError
-
-            headers =\
+            headers = \
                 {
-                'x-rapidapi-host': "hotels4.p.rapidapi.com",
-                'x-rapidapi-key': secret_key_api
+                    'x-rapidapi-host': "hotels4.p.rapidapi.com",
+                    'x-rapidapi-key': secret_key_api
                 }
-            response = loader.request_to_api("GET", url_for_hotels_list, headers, querystring_for_hotels_list)
+            response = request_to_api("GET", url_for_hotels_list, headers, querystring_for_hotels_list)
             return ReqApi.data_in_json(response)
         else:
             return SystemError
@@ -97,14 +63,12 @@ class ReqApi:
         Затем происходит открытие созданного файла в режиме "чтения" и происходит выгрузка данных
         из файла в словарь
         """
-
         try:
             if response.status_code == requests.codes.ok:
                 data = response.json()
                 return data
         except BaseException:
             return None
-
 
     def pars_picture_dict(self, data_pictures_in_json):
         """
@@ -125,7 +89,6 @@ class ReqApi:
 
         return list_with_picture
 
-
     @staticmethod
     def data_in_json(response):
         """
@@ -140,13 +103,11 @@ class ReqApi:
         except BaseException:
             return None
 
-
     def destination_id_founder(self, param: dict) -> str:
         """
         Данная функция служит для поиска параметра: "destinationId".
         Который отвечает за идентификаицю города, в котором будет проходить подбор лучшего варинанта.
         """
-
         for key_def, value_def in param.items():
             if isinstance(value_def, list):
                 for list_elem in value_def:
@@ -155,7 +116,6 @@ class ReqApi:
 
             if key_def == "type" and value_def == "CITY":
                 return param.get('destinationId')
-
 
     def hotels_list_ret(self, param: dict) -> list:
         """
@@ -169,8 +129,6 @@ class ReqApi:
                 stack.extend(value.items())
             elif isinstance(value, list) and key == "results":
                 return value
-
-
 
     def found_price(self, param: dict) -> list:
         """
@@ -201,13 +159,11 @@ class ReqApi:
                 hotel_list.append(landmark)
                 return hotel_list
 
-
     def low_price(self, param: list, max_hotels_count) -> list:
         """
             Данная функция служит для нахождения указанного количества отелей с минимальной стоимостью за ночь в
             пределах города
         """
-
         max_hotels = max_hotels_count
         sort_low_price_list = list()
         for elem in param:
@@ -216,7 +172,6 @@ class ReqApi:
 
         sort_low_price_list = sort_low_price_list[: int(max_hotels)][:]
         return sort_low_price_list
-
 
     def high_price(self, param: list, max_hotels_count) -> list:
         """
@@ -230,7 +185,6 @@ class ReqApi:
 
         sort_high_price_list = sort_high_price_list[-1:(len(sort_high_price_list) - (int(max_hotels) + 1)):-1][:]
         return sort_high_price_list
-
 
     def best_deal(self, param: list, max_hotels, min_price, max_price, permissible_range) -> list:
         """
