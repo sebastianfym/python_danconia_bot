@@ -17,8 +17,6 @@ from telebot.handler_backends import State, StatesGroup
 
 
 class UserRequestState(StatesGroup):
-    start = State()
-
     help = State()
     low_price = State()
     high_price = State()
@@ -33,3 +31,5 @@ class UserRequestState(StatesGroup):
     check_photo = State()
     show_result = State()
     get_count_photo = State()
+
+    my_request = State()

@@ -11,7 +11,6 @@ unique_dict_result = dict()
 user_dict_results = dict()
 
 
-# @bot.message_handler(commands=['calendar'])
 def start(m):
     calendar, step = DetailedTelegramCalendar().build()
     bot.send_message(m.chat.id,
@@ -164,3 +163,20 @@ def request_to_api(request_type, url, headers, querystring):
         return TimeoutError
 
 
+def show_result(message, control, best_price_execute, max_price_execute, min_price_execute):
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+        if control.best_deal_func_check_in_test_handlers is True:
+            control.best_deal_func_check_in_test_handlers = False
+            best_price_execute(message, data['city_name'], data['min_price_hotels'], data['max_price_hotels'],
+                               data['distance_to_center'], data['max_count_hotels'], start(message), start(message),
+                               data['check_photo'], data['count_photo'])
+
+        elif control.high_price_func_check_in_test_handlers is True:
+            control.high_price_func_check_in_test_handlers = False
+            max_price_execute(message, data['city_name'], data['max_count_hotels'], start(message), start(message),
+                              data['check_photo'], data['count_photo'])
+
+        elif control.min_price_func_check_in_test_handlers is True:
+            control.min_price_func_check_in_test_handlers = False
+            min_price_execute(message, data['city_name'], data['max_count_hotels'], start(message), start(message),
+                              data['check_photo'], data['count_photo'])

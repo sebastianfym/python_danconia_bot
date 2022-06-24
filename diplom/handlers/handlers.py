@@ -1,5 +1,4 @@
 from handlers.handlers_help_funcs import *
-# from handlers.handlers_help_funcs import processing_name_handlers_id_list_func
 from reqapi import ReqApi
 from loader.loader import *
 
@@ -10,8 +9,6 @@ class ControlBot:
         self.check_max = False
         self.check_best_deal = False
         self.check_picture = False
-        self.check_date = False
-        self.property_list = list()
 
         self.count_hostels = False
         self.city_name = None
@@ -40,14 +37,7 @@ class Users:
     def __init__(self, user_id):
         self.city = None
         self.check_in = None
-        self.check_out = None
         self.hotels_count = None
-        self.load_image = False
-        self.load_image_count = None
-        self.price_min = None
-        self.price_max = None
-        self.distance_from_center_min = None
-        self.distance_from_center_max = None
         self.command = None,
         Users.add_user(user_id, self)
 
