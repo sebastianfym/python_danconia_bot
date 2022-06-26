@@ -1,34 +1,6 @@
 from handlers.handlers_help_funcs import *
-from reqapi import ReqApi
+from rapid_api.reqapi import ReqApi
 from loader.loader import *
-
-
-class ControlBot:
-    def __init__(self):
-        self.check_low = False
-        self.check_max = False
-        self.check_best_deal = False
-        self.check_picture = False
-
-        self.count_hostels = False
-        self.city_name = None
-        self.max_price = False
-        self.min_price = False
-        self.length_to_center = False
-
-        self.first_func = False
-        self.second_func = False
-        self.third_func = False
-
-        self.counter_index_hotel_in_list = None
-
-        self.max_count_pic = None
-
-        self.destination_id_list = []
-
-        self.min_price_func_check_in_test_handlers = False
-        self.high_price_func_check_in_test_handlers = False
-        self.best_deal_func_check_in_test_handlers = False
 
 
 class Users:
@@ -54,13 +26,10 @@ class Users:
 
 
 bot = bot
-control = ControlBot()
-unique_dict_result = unique_dict_result
 user_dict_results = user_dict_results
 
 
 def min_price_execute(message, city_name, count_hotels, cal_star, cal_finish, check_picture, max_count_pic):
-    control.check_low = False
     max_hotels = count_hotels
     check_picture = check_picture
     body_req = ReqApi()
@@ -77,7 +46,6 @@ def min_price_execute(message, city_name, count_hotels, cal_star, cal_finish, ch
 
 
 def max_price_execute(message, city_name, count_hotels, cal_star, cal_finish, check_picture, max_count_pic):
-    control.check_max = False
     max_hotels = count_hotels
 
     body_req = ReqApi()
@@ -97,7 +65,6 @@ def best_price_execute(message, city_name, min_price, max_price, length_to_cente
     city, min_price, max_price, permissible_range, max_hotels = city_name, min_price, max_price, length_to_center, \
                                                                 count_hotels
 
-    control.check_best_deal = False
     check_picture = check_picture
     body_req = ReqApi()
     body_req.city_found = city
@@ -111,10 +78,6 @@ def best_price_execute(message, city_name, min_price, max_price, length_to_cente
     bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, body_req, max_hotels, min_price, max_price,
                              permissible_range, check_picture, max_count_pic, hotels_id_list)
 
-
-def check_property(message):
-    bot.send_message(message.chat.id, "Введите корректное число: ")
-    return
 
 
 

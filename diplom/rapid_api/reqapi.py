@@ -1,5 +1,5 @@
 from config_data.config import secret_key_api
-from loader.loader import *
+import requests
 
 
 class ReqApi:
@@ -19,6 +19,14 @@ class ReqApi:
                             self.destination_id_list.append(elem['destinationId'])
         return self.destination_id_list
 
+    def request_to_api(self, request_type, url, headers, querystring):
+        try:
+            response = requests.request(request_type, url, headers=headers, params=querystring, timeout=10)
+            if response.status_code == requests.codes.ok:
+                return response
+        except TimeoutError:
+            return TimeoutError
+
     def is_city_exists(self, city_name):
         """
         Метод для проверки существования города где делается соответствующий запрос.
@@ -31,7 +39,7 @@ class ReqApi:
             'x-rapidapi-key': secret_key_api
         }
         query_string = {"query": city_name.lower(), "locale": "ru_RU"}
-        response = request_to_api("GET", url, headers, query_string)
+        response = self.request_to_api("GET", url, headers, query_string)
         return response
 
     def get_site_response(self, city_name):
@@ -51,7 +59,7 @@ class ReqApi:
                     'x-rapidapi-host': "hotels4.p.rapidapi.com",
                     'x-rapidapi-key': secret_key_api
                 }
-            response = request_to_api("GET", url_for_hotels_list, headers, querystring_for_hotels_list)
+            response = self.request_to_api("GET", url_for_hotels_list, headers, querystring_for_hotels_list)
             return ReqApi.data_in_json(response)
         else:
             return SystemError

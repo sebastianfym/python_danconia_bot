@@ -1,11 +1,9 @@
-from loader.loader import bot, start,  show_result
-from markup.reply_markup.reply_keyboard_markup import request_photo_keyboard
+from loader.loader import bot
+from markup.reply_markup.reply_keyboard_markup import markup
 from main_state.main_state import UserRequestState
 from telebot.types import Message
-from handlers.handlers import ControlBot, min_price_execute, max_price_execute, best_price_execute
-from handlers.handlers_help_funcs import watch_result
-
-control = ControlBot()
+from handlers.handlers import min_price_execute, max_price_execute, best_price_execute
+from handlers.handlers_help_funcs import watch_result, start,  show_result
 
 
 @bot.message_handler(commands=['help'])
@@ -25,21 +23,21 @@ def my_request(message: Message) -> None:
 def low_price(message: Message) -> None:
     bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
     bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Tver):")
-    control.min_price_func_check_in_test_handlers = True
+    UserRequestState.low_price = True
 
 
 @bot.message_handler(commands=['highprice'])
 def high_price(message: Message) -> None:
     bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
-    bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Saint Petersburg):")
-    control.high_price_func_check_in_test_handlers = True
+    bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Ontario):")
+    UserRequestState.high_price = True
 
 
 @bot.message_handler(commands=['bestdeal'])
 def best_deal(message: Message) -> None:
     bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
     bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Moscow):")
-    control.best_deal_func_check_in_test_handlers = True
+    UserRequestState.best_deal = True
 
 
 @bot.message_handler(state=UserRequestState.city_name)
@@ -58,20 +56,19 @@ def city_name(message: Message) -> None:
 @bot.message_handler(state=UserRequestState.max_count_hotels)
 def max_count_hotels(message: Message) -> None:
     if message.text.isdigit():
-        if control.best_deal_func_check_in_test_handlers is True:
+        if UserRequestState.best_deal is True:
             bot.send_message(message.chat.id, f'Введите максимальную стоимость: ')
             bot.set_state(message.from_user.id, UserRequestState.max_price_hotels, message.chat.id)
 
         else:
             bot.send_message(message.chat.id, f'Хотите ли Вы увидеть фото отелей?',
-                             reply_markup=request_photo_keyboard())
+                             reply_markup=markup())
             bot.set_state(message.from_user.id, UserRequestState.check_photo, message.chat.id)
 
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['max_count_hotels'] = int(message.text)
     else:
-        bot.send_message(message.chat.id, f'Название города может содержать в себе только бувы. Пожалуйста, повторите '
-                                          f'попытку')
+        bot.send_message(message.chat.id, f'Введите корректное число')
 
 
 @bot.message_handler(state=UserRequestState.max_price_hotels)
@@ -83,7 +80,7 @@ def max_price_hotels(message: Message) -> None:
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['max_price_hotels'] = int(message.text)
     else:
-        bot.send_message(message.chat.id, f'Цифра не может содержать в себе буквы.')
+        bot.send_message(message.chat.id, f'Введите корректное число')
 
 
 @bot.message_handler(state=UserRequestState.min_price_hotels)
@@ -94,7 +91,7 @@ def min_price_hotels(message: Message) -> None:
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['min_price_hotels'] = int(message.text)
     else:
-        bot.send_message(message.chat.id, f'Цифра не может содержать в себе буквы.')
+        bot.send_message(message.chat.id, f'Введите корректное число')
 
 
 @bot.message_handler(state=UserRequestState.distance_to_center)
@@ -105,7 +102,7 @@ def distance_to_center(message: Message) -> None:
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['distance_to_center'] = int(message.text)
     else:
-        bot.send_message(message.chat.id, f'Цифра не может содержать в себе буквы.')
+        bot.send_message(message.chat.id, f'Введите корректное число')
 
 
 @bot.message_handler(func=lambda message: message.text.lower() == "да", state=UserRequestState.check_photo)
@@ -123,7 +120,7 @@ def check_photo(message) -> None:
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['check_photo'] = False
         data['count_photo'] = 0
-    show_result(message, control, best_price_execute, max_price_execute, min_price_execute)
+    show_result(message, best_price_execute, max_price_execute, min_price_execute)
 
 
 @bot.message_handler(state=UserRequestState.get_count_photo)
@@ -131,8 +128,7 @@ def get_count_photo(message: Message) -> None:
     bot.set_state(message.from_user.id, UserRequestState.show_result, message.chat.id)
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['count_photo'] = int(message.text)
-    show_result(message, control, best_price_execute, max_price_execute, min_price_execute)
-
+    show_result(message, best_price_execute, max_price_execute, min_price_execute)
 
 
 

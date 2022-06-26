@@ -1,9 +1,13 @@
-from reqapi import ReqApi
+from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
+from markup.reply_markup.reply_keyboard_markup import markup
+from rapid_api.reqapi import ReqApi
 from loader.loader import *
 from config_data.config import secret_key_pic
+import requests
+from main_state.main_state import UserRequestState
+
 bot = bot
-unique_dict_result = unique_dict_result
-user_dict_results = user_dict_results
+user_dict_results = UserRequestState.user_dict_results
 
 
 def processing_name_handlers_id_list_func(city_name):
@@ -97,13 +101,14 @@ def min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_pi
 
         counter = 0
         for low_elem in body_req.low_price(returned_all_hotels_list, max_hotels):
-            check_and_append(message, f"/{search_price_condition}", user_dict_results, low_elem, counter, check_picture, max_count_pic,
+            check_and_append(message, f"/{search_price_condition}", user_dict_results, low_elem, counter, check_picture,
+                             max_count_pic,
                              hotels_id_list)
             counter += 1
 
 
 def bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, body_req, max_hotels, min_price, max_price,
-                            permissible_range, check_picture, max_count_pic, hotels_id_list):
+                             permissible_range, check_picture, max_count_pic, hotels_id_list):
     if city_exists is None or len(returned_all_hotels_list) == 0:
         bot.send_message(message.chat.id, "В моем списке нет подходящего варианта, попробуйте заново.")
         return None
@@ -131,3 +136,41 @@ def bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, bod
             counter += 1
 
 
+def start(m):
+    calendar, step = DetailedTelegramCalendar().build()
+    bot.send_message(m.chat.id,
+                     f"Select {LSTEP[step]}",
+                     reply_markup=calendar)
+
+
+@bot.callback_query_handler(func=DetailedTelegramCalendar.func())
+def cal(c):
+    result, key, step = DetailedTelegramCalendar().process(c.data)
+    if not result and key:
+        bot.edit_message_text(f"Select {LSTEP[step]}",
+                              c.message.chat.id,
+                              c.message.message_id,
+                              reply_markup=key)
+    elif result:
+        bot.edit_message_text(f"You selected {result}",
+                              c.message.chat.id,
+                              c.message.message_id)
+
+
+def show_result(message, best_price_execute, max_price_execute, min_price_execute):
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+        if UserRequestState.best_deal is True:
+            UserRequestState.best_deal = False
+            best_price_execute(message, data['city_name'], data['min_price_hotels'], data['max_price_hotels'],
+                               data['distance_to_center'], data['max_count_hotels'], start(message), start(message),
+                               data['check_photo'], data['count_photo'])
+
+        elif UserRequestState.high_price is True:
+            UserRequestState.high_price = False
+            max_price_execute(message, data['city_name'], data['max_count_hotels'], start(message), start(message),
+                              data['check_photo'], data['count_photo'])
+
+        elif UserRequestState.low_price is True:
+            UserRequestState.low_price = False
+            min_price_execute(message, data['city_name'], data['max_count_hotels'], start(message), start(message),
+                              data['check_photo'], data['count_photo'])

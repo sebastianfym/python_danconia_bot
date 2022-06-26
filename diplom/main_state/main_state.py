@@ -1,26 +1,11 @@
 from telebot.handler_backends import State, StatesGroup
 
-"""
-    low_price/high_price
-        1. получение названия города
-        2. получение максимального количества отелей
-        3. фото - да/нет
-    
-    best_deal
-        1. получение названия города
-        2. получение минимальной цены
-        3. получение максимальнной цены
-        4. полечение допустимого расстояния к центру
-        5. получение максимального количества отелей
-        6. фото - да/нет
-"""
-
 
 class UserRequestState(StatesGroup):
     help = State()
-    low_price = State()
-    high_price = State()
-    best_deal = State()
+    low_price = False
+    high_price = False
+    best_deal = False
 
     city_name = State()
     max_count_hotels = State()
@@ -33,3 +18,5 @@ class UserRequestState(StatesGroup):
     get_count_photo = State()
 
     my_request = State()
+
+    user_dict_results = {}
