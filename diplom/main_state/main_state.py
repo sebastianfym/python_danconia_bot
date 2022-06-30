@@ -2,7 +2,6 @@ from telebot.handler_backends import State, StatesGroup
 
 
 class UserRequestState(StatesGroup):
-    help = State()
     low_price = False
     high_price = False
     best_deal = False
@@ -17,6 +16,10 @@ class UserRequestState(StatesGroup):
     show_result = State()
     get_count_photo = State()
 
-    my_request = State()
-
     user_dict_results = {}
+
+    list_with_date = []
+
+
+class DateRangeState(StatesGroup):
+    check_in = State()

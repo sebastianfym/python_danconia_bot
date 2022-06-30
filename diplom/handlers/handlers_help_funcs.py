@@ -1,10 +1,11 @@
-from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
-from markup.reply_markup.reply_keyboard_markup import markup
+from datetime import date, timedelta
+from telebot.types import Message
+from telegram_bot_calendar import DetailedTelegramCalendar
 from rapid_api.reqapi import ReqApi
 from loader.loader import *
 from config_data.config import secret_key_pic
 import requests
-from main_state.main_state import UserRequestState
+from main_state.main_state import UserRequestState, DateRangeState
 
 bot = bot
 user_dict_results = UserRequestState.user_dict_results
@@ -76,17 +77,24 @@ def check_and_append(message, price_condition, user_dict, cycle_elem, counter_in
     if price_condition not in user_dict_results[message.from_user.id]:
         user_dict_results[message.from_user.id][price_condition] = []
 
-    bot.send_message(message.chat.id,
-                     f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])} "
-                     f"руб/сутки")
-
-    if check_picture is True:
-        send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_list)
-
-    user_dict_results[message.from_user.id][price_condition].append(
-        f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])} "
-        f"руб/сутки")
-    return user_dict
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+        if check_picture is True:
+            bot.send_message(message.chat.id,
+                             f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])}руб/сутки\n"
+                             f"Расстояние к центру города: {str(cycle_elem[2])}\nАдрес: {str(cycle_elem[3])}\n"
+                             f"Количество фото: {data['count_photo']}\n"
+                             f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter_index_hotel_in_list]}")
+            send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_list)
+        else:
+            bot.send_message(message.chat.id,
+                             f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])}руб/сутки\n"
+                             f"Расстояние к центру города: {str(cycle_elem[2])}\nАдрес: {str(cycle_elem[3])}\n"
+                             f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter_index_hotel_in_list]}")
+        user_dict_results[message.from_user.id][price_condition].append(
+            f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])}руб/сутки\n"
+            f"Расстояние к центру города: {str(cycle_elem[2])}\nАдрес: {str(cycle_elem[3])}"
+            f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter_index_hotel_in_list]}")
+        return user_dict
 
 
 def min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_picture, max_count_pic, hotels_id_list,
@@ -100,11 +108,16 @@ def min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_pi
             user_dict_results[message.from_user.id] = {}
 
         counter = 0
-        for low_elem in body_req.low_price(returned_all_hotels_list, max_hotels):
-            check_and_append(message, f"/{search_price_condition}", user_dict_results, low_elem, counter, check_picture,
-                             max_count_pic,
-                             hotels_id_list)
-            counter += 1
+        if search_price_condition == 'lowprice':
+            for low_elem in body_req.low_price(returned_all_hotels_list, max_hotels):
+                check_and_append(message, f"/{search_price_condition}", user_dict_results, low_elem, counter,
+                                 check_picture, max_count_pic, hotels_id_list)
+                counter += 1
+        elif search_price_condition == 'highprice':
+            for max_elem in body_req.high_price(returned_all_hotels_list, max_hotels):
+                check_and_append(message, f"/{search_price_condition}", user_dict_results, max_elem, counter,
+                                 check_picture, max_count_pic, hotels_id_list)
+                counter += 1
 
 
 def bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, body_req, max_hotels, min_price, max_price,
@@ -122,55 +135,86 @@ def bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, bod
         counter = 0
         for best_elem in body_req.best_deal(returned_all_hotels_list, max_hotels, min_price, max_price,
                                             permissible_range):
-            if '/bestdeal' not in user_dict_results[message.from_user.id]:
-                user_dict_results[message.from_user.id]['/bestdeal'] = []
+            with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+                if '/bestdeal' not in user_dict_results[message.from_user.id]:
+                    user_dict_results[message.from_user.id]['/bestdeal'] = []
 
-            if check_picture is True:
-                send_picture(message, max_count_pic, counter, hotels_id_list)
+                if check_picture is True:
+                    send_picture(message, max_count_pic, counter, hotels_id_list)
 
-            bot.send_message(message.chat.id, f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
-                                              f"\nРасстояние к центру {best_elem[2]} км.")
-            user_dict_results[message.from_user.id]['/bestdeal'].append(f"Отель: {best_elem[0]}.\n"
-                                                                        f"Цена: {best_elem[1]['price']} руб/сутки."
-                                                                        f"\nРасстояние к центру {best_elem[2]} км.")
-            counter += 1
-
-
-def start(m):
-    calendar, step = DetailedTelegramCalendar().build()
-    bot.send_message(m.chat.id,
-                     f"Select {LSTEP[step]}",
-                     reply_markup=calendar)
-
-
-@bot.callback_query_handler(func=DetailedTelegramCalendar.func())
-def cal(c):
-    result, key, step = DetailedTelegramCalendar().process(c.data)
-    if not result and key:
-        bot.edit_message_text(f"Select {LSTEP[step]}",
-                              c.message.chat.id,
-                              c.message.message_id,
-                              reply_markup=key)
-    elif result:
-        bot.edit_message_text(f"You selected {result}",
-                              c.message.chat.id,
-                              c.message.message_id)
+                    bot.send_message(message.chat.id, f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
+                                                      f"\nРасстояние к центру {best_elem[2]} км.\nАдрес: {str(best_elem[3])}\n"
+                                                      f"Количество фото: {data['count_photo']}"
+                                                      f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter]}")
+                else:
+                    bot.send_message(message.chat.id,
+                                     f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
+                                     f"\nРасстояние к центру {best_elem[2]} км.\nАдрес: {str(best_elem[3])}"
+                                     f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter]}")
+                user_dict_results[message.from_user.id]['/bestdeal'].append(f"Отель: {best_elem[0]}.\n"
+                                                                            f"Цена: {best_elem[1]['price']} руб/сутки."
+                                                                            f"\nРасстояние к центру {best_elem[2]} км."
+                                                                            f"\nАдрес: {str(best_elem[3])}"
+                                                                            f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter]}")
+                counter += 1
 
 
-def show_result(message, best_price_execute, max_price_execute, min_price_execute):
+def get_calendar(is_process=False, callback_data=None, **kwargs):
+    """
+    Функция инициализации инлайнового календаря
+    :param is_process:
+    :param callback_data:
+    :param kwargs:
+    :return:
+    """
+    if is_process:
+        result, key, step = DetailedTelegramCalendar(calendar_id=kwargs['calendar_id'],
+                                                     current_date=kwargs.get('current_date'),
+                                                     min_date=kwargs['min_date'],
+                                                     max_date=kwargs['max_date'],
+                                                     locale=kwargs['locale']).process(callback_data.data)
+        return result, key, step
+    else:
+        calendar, step = DetailedTelegramCalendar(calendar_id=kwargs['calendar_id'],
+                                                  current_date=kwargs.get('current_date'),
+                                                  min_date=kwargs['min_date'],
+                                                  max_date=kwargs['max_date'],
+                                                  locale=kwargs['locale']).build()
+        return calendar, step
+
+
+@bot.message_handler(commands=['calendar'])
+def calendar_command(message: Message) -> None:
+    """
+    Функция вызова календаря
+    :param message:
+    :return:
+    """
+    today = date.today()
+    calendar, step = get_calendar(calendar_id=1,
+                                  current_date=today,
+                                  min_date=today,
+                                  max_date=today + timedelta(days=365),
+                                  locale="ru")
+
+    bot.set_state(message.from_user.id, DateRangeState.check_in, message.chat.id)
+    bot.send_message(message.from_user.id, f"Привет, Выбери {ALL_STEPS[step]}", reply_markup=calendar)
+
+
+def show_result(message, best_price_execute, max_price_execute, min_price_execute, first_date, last_date):
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         if UserRequestState.best_deal is True:
             UserRequestState.best_deal = False
             best_price_execute(message, data['city_name'], data['min_price_hotels'], data['max_price_hotels'],
-                               data['distance_to_center'], data['max_count_hotels'], start(message), start(message),
-                               data['check_photo'], data['count_photo'])
+                               data['distance_to_center'], data['max_count_hotels'], first_date,
+                               last_date, data['check_photo'], data['count_photo'])
 
         elif UserRequestState.high_price is True:
             UserRequestState.high_price = False
-            max_price_execute(message, data['city_name'], data['max_count_hotels'], start(message), start(message),
-                              data['check_photo'], data['count_photo'])
+            max_price_execute(message, data['city_name'], data['max_count_hotels'], first_date,
+                              last_date, data['check_photo'], data['count_photo'])
 
         elif UserRequestState.low_price is True:
             UserRequestState.low_price = False
-            min_price_execute(message, data['city_name'], data['max_count_hotels'], start(message), start(message),
-                              data['check_photo'], data['count_photo'])
+            min_price_execute(message, data['city_name'], data['max_count_hotels'], first_date,
+                              last_date, data['check_photo'], data['count_photo'])

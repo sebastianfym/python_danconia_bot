@@ -79,5 +79,3 @@ def best_price_execute(message, city_name, min_price, max_price, length_to_cente
                              permissible_range, check_picture, max_count_pic, hotels_id_list)
 
 
-
-
