@@ -2,7 +2,7 @@ from loader.loader import bot
 from markup.reply_markup.reply_keyboard_markup import markup
 from main_state.main_state import UserRequestState
 from telebot.types import Message
-from handlers.handlers import min_price_execute, max_price_execute, best_price_execute
+from handlers.handlers import min_price_execute, max_price_execute, best_price_execute, set_date
 from handlers.handlers_help_funcs import watch_result, start,  show_result
 
 
@@ -48,6 +48,7 @@ def city_name(message: Message) -> None:
 
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['city_name'] = message.text
+            data['list_with_date'] = list()
     else:
         bot.send_message(message.chat.id, f'Название города может содержать в себе только бувы. Пожалуйста, повторите '
                                           f'попытку')
@@ -120,7 +121,12 @@ def check_photo(message) -> None:
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['check_photo'] = False
         data['count_photo'] = 0
-    show_result(message, best_price_execute, max_price_execute, min_price_execute)
+
+    set_date(message, 'start_date', 0)
+    set_date(message, 'exit_date', 1)
+
+    bot.send_message(message.chat.id, 'Ваш запрос почти обработан! Введите дату и выберите "Да", если хотите увидеть '
+                                      'результат.')
 
 
 @bot.message_handler(state=UserRequestState.get_count_photo)
@@ -128,7 +134,20 @@ def get_count_photo(message: Message) -> None:
     bot.set_state(message.from_user.id, UserRequestState.show_result, message.chat.id)
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['count_photo'] = int(message.text)
-    show_result(message, best_price_execute, max_price_execute, min_price_execute)
+    set_date(message, 'start_date', 0)
+    set_date(message, 'exit_date', 1)
 
+    bot.send_message(message.chat.id, 'Ваш запрос почти обработан! Введите дату и выберите "Да", если хотите увидеть '
+                                      'результат.')
+
+
+@bot.message_handler(func=lambda message: message.text.lower() == "нет" or 'да', state=UserRequestState.show_result)
+def show_result_state(message):
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+        if len(data['list_with_date']) == 2:
+            if data['list_with_date'][0] > data['list_with_date'][1]:
+                data['list_with_date'][0], data['list_with_date'][1] = data['list_with_date'][1], data['list_with_date'][0]
+            show_result(message, best_price_execute, max_price_execute, min_price_execute, data['list_with_date'][0],
+                        data['list_with_date'][1])
 
 

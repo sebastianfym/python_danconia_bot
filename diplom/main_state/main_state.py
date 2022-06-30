@@ -20,3 +20,9 @@ class UserRequestState(StatesGroup):
     my_request = State()
 
     user_dict_results = {}
+
+    test_calendar_first_date = State()
+    test_calendar_second_date = State()
+
+    list_with_date = []
+    test_variable = State()

@@ -147,6 +147,9 @@ class ReqApi:
         for key, value in param.items():
             if key == "name":
                 name = value
+            elif key == 'address':
+                address = value['streetAddress']
+
             elif key == "landmarks":
                 cycle = value[0]["distance"]
                 landmark = str()
@@ -165,6 +168,7 @@ class ReqApi:
                 price_dict['price'] = int(value['price']['exactCurrent'])
                 hotel_list.append(price_dict)
                 hotel_list.append(landmark)
+                hotel_list.append(address)
                 return hotel_list
 
     def low_price(self, param: list, max_hotels_count) -> list:
@@ -192,6 +196,7 @@ class ReqApi:
                 sort_high_price_list.append(self.found_price(elem))
 
         sort_high_price_list = sort_high_price_list[-1:(len(sort_high_price_list) - (int(max_hotels) + 1)):-1][:]
+
         return sort_high_price_list
 
     def best_deal(self, param: list, max_hotels, min_price, max_price, permissible_range) -> list:
