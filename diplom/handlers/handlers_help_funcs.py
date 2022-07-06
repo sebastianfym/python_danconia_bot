@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from telebot.types import Message
 from telegram_bot_calendar import DetailedTelegramCalendar
+from db.user_request_db.user_request_db import sql_create_and_check_table, sql_data_check
 from rapid_api.reqapi import ReqApi
 from loader.loader import *
 from config_data.config import secret_key_pic
@@ -8,7 +9,7 @@ import requests
 from main_state.main_state import UserRequestState, DateRangeState
 
 bot = bot
-user_dict_results = UserRequestState.user_dict_results
+user_dict_results = UserResults.user_dict_results
 
 
 def processing_name_handlers_id_list_func(city_name):
@@ -17,20 +18,6 @@ def processing_name_handlers_id_list_func(city_name):
     if city_exists:
         destination_id_list = body_req.destination_id_founder_func(body_req.data_in_json(city_exists))
         return destination_id_list
-
-
-def watch_result(message):
-    if message.from_user.id not in user_dict_results:
-        bot.send_message(message.chat.id, 'Вы пока-еще не делали запросов. Попробуйте попозже.')
-        return None
-    else:
-        for result_elem in user_dict_results[message.from_user.id].keys():
-            if len(user_dict_results[message.from_user.id][result_elem]) >= 1:
-                bot.send_message(message.chat.id, f"По запросу команды {result_elem} вы смотрели варианты:")
-                for show_result in user_dict_results[message.from_user.id][result_elem]:
-                    bot.send_message(message.chat.id, show_result)
-            else:
-                bot.send_message(message.chat.id, f'Вы еще не делали запросов по {result_elem}')
 
 
 def description_commands(message):
@@ -43,10 +30,9 @@ def description_commands(message):
                                       "которые делали раньше")
 
 
-def send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_list):
+def send_picture(message, max_count_pic, hotel_id):
     body_req = ReqApi()
     counter = 0
-    hotel_id = hotels_id_list[counter_index_hotel_in_list]
 
     if body_req.data_pictures_in_json(
             requests.request("GET", "https://hotels4.p.rapidapi.com/properties/get-hotel-photos",
@@ -71,34 +57,42 @@ def send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_
         bot.send_message(message.chat.id, 'Для этого отеля я фотографий не нашел :C')
 
 
-def check_and_append(message, price_condition, user_dict, cycle_elem, counter_index_hotel_in_list, check_picture,
-                     max_count_pic, hotels_id_list):
-    check_picture = check_picture
+def check_and_append(message, price_condition, user_dict, cycle_elem, check_picture, max_count_pic, hotel_id):
+    price_condition = str(price_condition).split('/')[1]
+    sql_create_and_check_table(price_condition)
+
     if price_condition not in user_dict_results[message.from_user.id]:
         user_dict_results[message.from_user.id][price_condition] = []
 
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+        total_from_all_time_price = data['days_between_dates'] * cycle_elem[1]['price']
+
+        sql_data_check(price_condition, str(cycle_elem[0]), cycle_elem[1]['price'], total_from_all_time_price,
+                       str(cycle_elem[2]), str(cycle_elem[3]), f"https://www.hotels.com/ho{hotel_id}")
+
         if check_picture is True:
             bot.send_message(message.chat.id,
-                             f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])}руб/сутки\n"
-                             f"Расстояние к центру города: {str(cycle_elem[2])}\nАдрес: {str(cycle_elem[3])}\n"
+                             f"Название отеля: {str(cycle_elem[0])}.\n"
+                             f"Цена за сутки: {cycle_elem[1]['price']}руб.\n"
+                             f"Цена за всё время проживания: {total_from_all_time_price}руб\n"
+                             f"Расстояние к центру города: {str(cycle_elem[2])}\n"
+                             f"Адрес: {str(cycle_elem[3])}\n"
                              f"Количество фото: {data['count_photo']}\n"
-                             f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter_index_hotel_in_list]}")
-            send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_list)
+                             f"Ссылка на отель: https://www.hotels.com/ho{hotel_id}")
+
+            send_picture(message, max_count_pic, hotel_id)
         else:
             bot.send_message(message.chat.id,
-                             f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])}руб/сутки\n"
+                             f"Название отеля: {str(cycle_elem[0])}.\n"
+                             f"Цена за сутки: {cycle_elem[1]['price']}руб.\n"
+                             f"Цена за всё время проживания: {total_from_all_time_price}руб\n"
                              f"Расстояние к центру города: {str(cycle_elem[2])}\nАдрес: {str(cycle_elem[3])}\n"
-                             f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter_index_hotel_in_list]}")
-        user_dict_results[message.from_user.id][price_condition].append(
-            f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])}руб/сутки\n"
-            f"Расстояние к центру города: {str(cycle_elem[2])}\nАдрес: {str(cycle_elem[3])}"
-            f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter_index_hotel_in_list]}")
+                             f"Ссылка на отель: https://www.hotels.com/ho{hotel_id}")
         return user_dict
 
 
-def min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_picture, max_count_pic, hotels_id_list,
-                            search_price_condition):
+def min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_picture, max_count_pic, search_price_condition):
+
     if city_exists is None:
         bot.send_message(message.chat.id, "В моем списке нет такого города , попробуйте заново.")
         return None
@@ -107,17 +101,14 @@ def min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_pi
         if message.from_user.id not in user_dict_results:
             user_dict_results[message.from_user.id] = {}
 
-        counter = 0
         if search_price_condition == 'lowprice':
             for low_elem in body_req.low_price(returned_all_hotels_list, max_hotels):
-                check_and_append(message, f"/{search_price_condition}", user_dict_results, low_elem, counter,
-                                 check_picture, max_count_pic, hotels_id_list)
-                counter += 1
+                check_and_append(message, f"/{search_price_condition}", user_dict_results, low_elem,
+                                 check_picture, max_count_pic, low_elem[-1])
         elif search_price_condition == 'highprice':
             for max_elem in body_req.high_price(returned_all_hotels_list, max_hotels):
-                check_and_append(message, f"/{search_price_condition}", user_dict_results, max_elem, counter,
-                                 check_picture, max_count_pic, hotels_id_list)
-                counter += 1
+                check_and_append(message, f"/{search_price_condition}", user_dict_results, max_elem,
+                                 check_picture, max_count_pic, max_elem[-1])
 
 
 def bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, body_req, max_hotels, min_price, max_price,
@@ -126,46 +117,47 @@ def bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, bod
         bot.send_message(message.chat.id, "В моем списке нет подходящего варианта, попробуйте заново.")
         return None
     else:
+        sql_create_and_check_table('bestdeal')
+
         if message.from_user.id not in user_dict_results:
             user_dict_results[message.from_user.id] = {}
 
         if len(body_req.best_deal(returned_all_hotels_list, max_hotels, min_price, max_price, permissible_range)) == 0:
             bot.send_message(message.chat.id, 'К сожалению по вашему запросу ничего не найдено.')
+        else:
+            for best_elem in body_req.best_deal(returned_all_hotels_list, max_hotels, min_price, max_price,
+                                                permissible_range):
+                with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+                    total_from_all_time_price = data['days_between_dates'] * best_elem[1]['price']
+                    sql_data_check('bestdeal', str(best_elem[0]), best_elem[1]['price'], total_from_all_time_price,
+                                   best_elem[2], str(best_elem[3]), f"https://www.hotels.com/ho{best_elem[-1]}")
 
-        counter = 0
-        for best_elem in body_req.best_deal(returned_all_hotels_list, max_hotels, min_price, max_price,
-                                            permissible_range):
-            with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-                if '/bestdeal' not in user_dict_results[message.from_user.id]:
-                    user_dict_results[message.from_user.id]['/bestdeal'] = []
+                    if '/bestdeal' not in user_dict_results[message.from_user.id]:
+                        user_dict_results[message.from_user.id]['/bestdeal'] = []
 
-                if check_picture is True:
-                    send_picture(message, max_count_pic, counter, hotels_id_list)
+                    if check_picture is True:
+                        send_picture(message, max_count_pic, hotels_id_list)
 
-                    bot.send_message(message.chat.id, f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
-                                                      f"\nРасстояние к центру {best_elem[2]} км.\nАдрес: {str(best_elem[3])}\n"
-                                                      f"Количество фото: {data['count_photo']}"
-                                                      f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter]}")
-                else:
-                    bot.send_message(message.chat.id,
-                                     f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
-                                     f"\nРасстояние к центру {best_elem[2]} км.\nАдрес: {str(best_elem[3])}"
-                                     f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter]}")
-                user_dict_results[message.from_user.id]['/bestdeal'].append(f"Отель: {best_elem[0]}.\n"
-                                                                            f"Цена: {best_elem[1]['price']} руб/сутки."
-                                                                            f"\nРасстояние к центру {best_elem[2]} км."
-                                                                            f"\nАдрес: {str(best_elem[3])}"
-                                                                            f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter]}")
-                counter += 1
+                        bot.send_message(message.chat.id, f"Отель: {best_elem[0]}.\n"
+                                                          f"Цена: {best_elem[1]['price']}руб/сутки\n"
+                                                          f"Цена за всё время проживания: {total_from_all_time_price}руб\n"
+                                                          f"Расстояние к центру {best_elem[2]} км.\n"
+                                                          f"Адрес: {str(best_elem[3])}\n"
+                                                          f"Количество фото: {data['count_photo']}"
+                                                          f"Ссылка на отель: https://www.hotels.com/ho{best_elem[-1]}")
+                    else:
+                        bot.send_message(message.chat.id,
+                                         f"Отель: {best_elem[0]}.\n"
+                                         f"Цена: {best_elem[1]['price']}руб/сутки\n"
+                                         f"Цена за всё время проживания: {total_from_all_time_price}руб\n"
+                                         f"Расстояние к центру {best_elem[2]} км.\n"
+                                         f"Адрес: {str(best_elem[3])}"
+                                         f"Ссылка на отель: https://www.hotels.com/ho{best_elem[-1]}")
 
 
 def get_calendar(is_process=False, callback_data=None, **kwargs):
     """
     Функция инициализации инлайнового календаря
-    :param is_process:
-    :param callback_data:
-    :param kwargs:
-    :return:
     """
     if is_process:
         result, key, step = DetailedTelegramCalendar(calendar_id=kwargs['calendar_id'],
@@ -187,8 +179,6 @@ def get_calendar(is_process=False, callback_data=None, **kwargs):
 def calendar_command(message: Message) -> None:
     """
     Функция вызова календаря
-    :param message:
-    :return:
     """
     today = date.today()
     calendar, step = get_calendar(calendar_id=1,

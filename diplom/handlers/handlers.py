@@ -1,32 +1,7 @@
 from handlers.handlers_help_funcs import *
+# from handlers.handlers_help_funcs import processing_name_handlers_id_list_func
 from rapid_api.reqapi import ReqApi
-from loader.loader import *
-
-
-class Users:
-    users = dict()
-
-    def __init__(self, user_id):
-        self.city = None
-        self.check_in = None
-        self.hotels_count = None
-        self.command = None,
-        Users.add_user(user_id, self)
-
-    @staticmethod
-    def get_user(user_id):
-        if Users.users.get(user_id) is None:
-            new_user = Users(user_id)
-            return new_user
-        return Users.users.get(user_id)
-
-    @classmethod
-    def add_user(cls, user_id, user):
-        cls.users[user_id] = user
-
-
-bot = bot
-user_dict_results = user_dict_results
+# from loader.loader import *
 
 
 def min_price_execute(message, city_name, count_hotels, cal_star, cal_finish, check_picture, max_count_pic):
@@ -39,10 +14,7 @@ def min_price_execute(message, city_name, count_hotels, cal_star, cal_finish, ch
     body_req.finish_date = cal_finish
 
     city_exists = body_req.get_site_response(body_req.city_found)
-    hotels_id_list = processing_name_handlers_id_list_func(city_name)
-
-    min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_picture, max_count_pic, hotels_id_list,
-                            'lowprice')
+    min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_picture, max_count_pic, 'lowprice')
 
 
 def max_price_execute(message, city_name, count_hotels, cal_star, cal_finish, check_picture, max_count_pic):
@@ -54,10 +26,7 @@ def max_price_execute(message, city_name, count_hotels, cal_star, cal_finish, ch
     body_req.finish_date = cal_finish
 
     city_exists = body_req.get_site_response(body_req.city_found)
-    hotels_id_list = processing_name_handlers_id_list_func(city_name)
-
-    min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_picture, max_count_pic, hotels_id_list,
-                            'highprice')
+    min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_picture, max_count_pic, 'highprice')
 
 
 def best_price_execute(message, city_name, min_price, max_price, length_to_center, count_hotels, cal_star, cal_finish,

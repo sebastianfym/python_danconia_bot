@@ -130,6 +130,7 @@ class ReqApi:
         Данная функция служит для получения и возвращения полного списка отелей со всеми их показателями и т.д. в
         пределах города.
         """
+        # if param is dict:
         stack = list(param.items())
         while stack:
             key, value = stack.pop()
@@ -145,9 +146,10 @@ class ReqApi:
         """
         hotel_list = list()
         for key, value in param.items():
-            if key == "name":
+            if key == "id":
+                hotels_id = value
+            elif key == "name":
                 name = value
-
             elif key == 'address':
                 if value['streetAddress']:
                     address = value['streetAddress']
@@ -172,6 +174,7 @@ class ReqApi:
                 hotel_list.append(price_dict)
                 hotel_list.append(landmark)
                 hotel_list.append(address)
+                hotel_list.append(hotels_id)
                 return hotel_list
 
     def low_price(self, param: list, max_hotels_count) -> list:
@@ -212,15 +215,15 @@ class ReqApi:
         max_price = int(max_price)
         permissible_range = float(permissible_range)
         sort_suitable_price_list = list()
-        test_list = list()
+        work_list = list()
 
         for elem in param:
             if isinstance(elem, dict):
-                test_list.append(self.found_price(elem))
+                work_list.append(self.found_price(elem))
 
         locale_check = False
 
-        for elem_list in test_list:
+        for elem_list in work_list:
             if max_price >= elem_list[1]["price"] >= min_price and elem_list[2] <= permissible_range and len(
                     sort_suitable_price_list) <= max_hotels:
                 sort_suitable_price_list.append(elem_list)

@@ -16,8 +16,6 @@ class UserRequestState(StatesGroup):
     show_result = State()
     get_count_photo = State()
 
-    user_dict_results = {}
-
     list_with_date = []
 
 

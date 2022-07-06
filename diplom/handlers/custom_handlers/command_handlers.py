@@ -1,11 +1,13 @@
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from telegram_bot_calendar import DetailedTelegramCalendar
+
+from db.user_request_db.user_request_db import get_data_in_db
 from loader.loader import bot, ALL_STEPS
 from markup.reply_markup.reply_keyboard_markup import markup
 from main_state.main_state import UserRequestState
 from telebot.types import Message, CallbackQuery
 from handlers.handlers import min_price_execute, max_price_execute, best_price_execute
-from handlers.handlers_help_funcs import watch_result, show_result, get_calendar, calendar_command
+from handlers.handlers_help_funcs import show_result, get_calendar, calendar_command
 
 
 @bot.message_handler(commands=['help'])
@@ -16,7 +18,9 @@ def help(message: Message) -> None:
 
 @bot.message_handler(commands=['my_request'])
 def my_request(message: Message) -> None:
-    watch_result(message)
+    get_data_in_db("lowprice", message, bot)
+    get_data_in_db("highprice", message, bot)
+    get_data_in_db("bestdeal", message, bot)
 
 
 @bot.message_handler(commands=['lowprice'])
@@ -161,8 +165,22 @@ def handle_arrival_date(call: CallbackQuery):
 
             data['check_out'] = result
 
-            bot.send_message(call.message.chat.id, 'Ваш запрос почти обработан! Введите дату и выберите "Да", '
-                                                   'если хотите увидеть результат.')
+            first_date_str, second_date_str = str(data['check_in']).split('-'), str(data['check_out']).split('-')
+            first_date_date_format = datetime(int(first_date_str[0]), int(first_date_str[1]), int(first_date_str[2]))
+            second_date_date_format = datetime(int(second_date_str[0]), int(second_date_str[1]), int(second_date_str[2]))
+
+            if str(second_date_date_format - first_date_date_format).split(' ')[0] == '0:00:00':
+                data['days_between_dates'] = 1
+                bot.send_message(call.message.chat.id, 'Ваш запрос почти обработан! Введите дату и выберите "Да", '
+                                                       'если хотите увидеть результат.')
+            elif int(str(second_date_date_format - first_date_date_format).split(' ')[0]) == 1:
+                data['days_between_dates'] = 2
+                bot.send_message(call.message.chat.id, 'Ваш запрос почти обработан! Введите дату и выберите "Да", '
+                                                       'если хотите увидеть результат.')
+            else:
+                data['days_between_dates'] = int(str(second_date_date_format - first_date_date_format).split(' ')[0])
+                bot.send_message(call.message.chat.id, 'Ваш запрос почти обработан! Введите дату и выберите "Да", '
+                                                       'если хотите увидеть результат')
 
 
 @bot.message_handler(func=lambda message: message.text.lower() == "да", state=UserRequestState.check_photo)
@@ -192,14 +210,14 @@ def get_count_photo(message: Message) -> None:
     bot.set_state(message.from_user.id, UserRequestState.show_result, message.chat.id)
 
 
-@bot.message_handler(func=lambda message: message.text.lower() == 'да', state=UserRequestState.show_result)
-def show_result_yes_state(message):
-    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        show_result(message, best_price_execute, max_price_execute, min_price_execute, data['check_in'],
-                    data['check_out'])
-
-
 @bot.message_handler(func=lambda message: message.text.lower() == 'нет', state=UserRequestState.show_result)
 def show_result_no_state(message):
     bot.send_message(message.chat.id, "Очень жаль, я подготовил несколько хороших вариантов. Но Вы всегда можете "
-                                      "попробовать еще обратиться ко мне! :)")
+                                      "еще обратиться ко мне! :)")
+
+
+@bot.message_handler(state=UserRequestState.show_result)
+def show_result_finally_state(message):
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+        show_result(message, best_price_execute, max_price_execute, min_price_execute, data['check_in'],
+                    data['check_out'])
