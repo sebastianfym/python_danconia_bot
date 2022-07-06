@@ -43,10 +43,9 @@ def description_commands(message):
                                       "которые делали раньше")
 
 
-def send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_list):
+def send_picture(message, max_count_pic, hotel_id):
     body_req = ReqApi()
     counter = 0
-    hotel_id = hotels_id_list[counter_index_hotel_in_list]
 
     if body_req.data_pictures_in_json(
             requests.request("GET", "https://hotels4.p.rapidapi.com/properties/get-hotel-photos",
@@ -72,7 +71,7 @@ def send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_
 
 
 def check_and_append(message, price_condition, user_dict, cycle_elem, counter_index_hotel_in_list, check_picture,
-                     max_count_pic, hotels_id_list):
+                     max_count_pic, hotels_id_list, hotel_id):
     check_picture = check_picture
     if price_condition not in user_dict_results[message.from_user.id]:
         user_dict_results[message.from_user.id][price_condition] = []
@@ -83,17 +82,17 @@ def check_and_append(message, price_condition, user_dict, cycle_elem, counter_in
                              f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])}руб/сутки\n"
                              f"Расстояние к центру города: {str(cycle_elem[2])}\nАдрес: {str(cycle_elem[3])}\n"
                              f"Количество фото: {data['count_photo']}\n"
-                             f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter_index_hotel_in_list]}")
-            send_picture(message, max_count_pic, counter_index_hotel_in_list, hotels_id_list)
+                             f"Ссылка на отель: https://www.hotels.com/ho{hotel_id}")
+            send_picture(message, max_count_pic, hotel_id)
         else:
             bot.send_message(message.chat.id,
                              f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])}руб/сутки\n"
                              f"Расстояние к центру города: {str(cycle_elem[2])}\nАдрес: {str(cycle_elem[3])}\n"
-                             f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter_index_hotel_in_list]}")
+                             f"Ссылка на отель: https://www.hotels.com/ho{hotel_id}")
         user_dict_results[message.from_user.id][price_condition].append(
             f"Название отеля: {str(cycle_elem[0])}.\nЦена: {str(cycle_elem[1]['price'])}руб/сутки\n"
             f"Расстояние к центру города: {str(cycle_elem[2])}\nАдрес: {str(cycle_elem[3])}"
-            f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter_index_hotel_in_list]}")
+            f"Ссылка на отель: https://www.hotels.com/ho{hotel_id}")
         return user_dict
 
 
@@ -111,12 +110,12 @@ def min_max_funcs_body_work(message, city_exists, body_req, max_hotels, check_pi
         if search_price_condition == 'lowprice':
             for low_elem in body_req.low_price(returned_all_hotels_list, max_hotels):
                 check_and_append(message, f"/{search_price_condition}", user_dict_results, low_elem, counter,
-                                 check_picture, max_count_pic, hotels_id_list)
+                                 check_picture, max_count_pic, hotels_id_list, low_elem[-1])
                 counter += 1
         elif search_price_condition == 'highprice':
             for max_elem in body_req.high_price(returned_all_hotels_list, max_hotels):
                 check_and_append(message, f"/{search_price_condition}", user_dict_results, max_elem, counter,
-                                 check_picture, max_count_pic, hotels_id_list)
+                                 check_picture, max_count_pic, hotels_id_list, max_elem[-1])
                 counter += 1
 
 
@@ -140,22 +139,22 @@ def bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, bod
                     user_dict_results[message.from_user.id]['/bestdeal'] = []
 
                 if check_picture is True:
-                    send_picture(message, max_count_pic, counter, hotels_id_list)
+                    send_picture(message, max_count_pic, hotels_id_list)
 
                     bot.send_message(message.chat.id, f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
                                                       f"\nРасстояние к центру {best_elem[2]} км.\nАдрес: {str(best_elem[3])}\n"
                                                       f"Количество фото: {data['count_photo']}"
-                                                      f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter]}")
+                                                      f"Ссылка на отель: https://www.hotels.com/ho{best_elem[-1]}")
                 else:
                     bot.send_message(message.chat.id,
                                      f"Отель: {best_elem[0]}.\nЦена: {best_elem[1]['price']} руб/сутки."
                                      f"\nРасстояние к центру {best_elem[2]} км.\nАдрес: {str(best_elem[3])}"
-                                     f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter]}")
+                                     f"Ссылка на отель: https://www.hotels.com/ho{[-1]}")
                 user_dict_results[message.from_user.id]['/bestdeal'].append(f"Отель: {best_elem[0]}.\n"
                                                                             f"Цена: {best_elem[1]['price']} руб/сутки."
                                                                             f"\nРасстояние к центру {best_elem[2]} км."
                                                                             f"\nАдрес: {str(best_elem[3])}"
-                                                                            f"Ссылка на отель: hotels.com/ho{hotels_id_list[counter]}")
+                                                                            f"Ссылка на отель: https://www.hotels.com/ho{[-1]}")
                 counter += 1
 
 
