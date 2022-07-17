@@ -59,7 +59,7 @@ def send_picture(message, max_count_pic, hotel_id):
 
 def check_and_append(message, price_condition, user_dict, cycle_elem, check_picture, max_count_pic, hotel_id):
     price_condition = str(price_condition).split('/')[1]
-    sql_create_and_check_table(price_condition)
+    # sql_create_and_check_table(price_condition)
 
     if price_condition not in user_dict_results[message.from_user.id]:
         user_dict_results[message.from_user.id][price_condition] = []
@@ -67,8 +67,9 @@ def check_and_append(message, price_condition, user_dict, cycle_elem, check_pict
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         total_from_all_time_price = data['days_between_dates'] * cycle_elem[1]['price']
 
-        sql_data_check(price_condition, str(cycle_elem[0]), cycle_elem[1]['price'], total_from_all_time_price,
-                       str(cycle_elem[2]), str(cycle_elem[3]), f"https://www.hotels.com/ho{hotel_id}")
+        # sql_data_check(price_condition, str(cycle_elem[0]), cycle_elem[1]['price'], total_from_all_time_price,
+        #                str(cycle_elem[2]), str(cycle_elem[3]), f"https://www.hotels.com/ho{hotel_id}",
+        #                int(message.from_user.id))
 
         if check_picture is True:
             bot.send_message(message.chat.id,
@@ -117,7 +118,7 @@ def bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, bod
         bot.send_message(message.chat.id, "В моем списке нет подходящего варианта, попробуйте заново.")
         return None
     else:
-        sql_create_and_check_table('bestdeal')
+        # sql_create_and_check_table('bestdeal')
 
         if message.from_user.id not in user_dict_results:
             user_dict_results[message.from_user.id] = {}
@@ -129,8 +130,9 @@ def bestdeal_funcs_body_work(city_exists, returned_all_hotels_list, message, bod
                                                 permissible_range):
                 with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
                     total_from_all_time_price = data['days_between_dates'] * best_elem[1]['price']
-                    sql_data_check('bestdeal', str(best_elem[0]), best_elem[1]['price'], total_from_all_time_price,
-                                   best_elem[2], str(best_elem[3]), f"https://www.hotels.com/ho{best_elem[-1]}")
+                    # sql_data_check('bestdeal', str(best_elem[0]), best_elem[1]['price'], total_from_all_time_price,
+                    #                best_elem[2], str(best_elem[3]), f"https://www.hotels.com/ho{best_elem[-1]}",
+                    #                int(message.from_user.id))
 
                     if '/bestdeal' not in user_dict_results[message.from_user.id]:
                         user_dict_results[message.from_user.id]['/bestdeal'] = []
