@@ -130,7 +130,6 @@ class ReqApi:
         Данная функция служит для получения и возвращения полного списка отелей со всеми их показателями и т.д. в
         пределах города.
         """
-        # if param is dict:
         stack = list(param.items())
         while stack:
             key, value = stack.pop()

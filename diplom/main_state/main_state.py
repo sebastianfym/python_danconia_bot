@@ -2,10 +2,6 @@ from telebot.handler_backends import State, StatesGroup
 
 
 class UserRequestState(StatesGroup):
-    low_price = False
-    high_price = False
-    best_deal = False
-
     city_name = State()
     max_count_hotels = State()
     min_price_hotels = State()

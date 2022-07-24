@@ -1,7 +1,5 @@
 from handlers.handlers_help_funcs import *
-# from handlers.handlers_help_funcs import processing_name_handlers_id_list_func
 from rapid_api.reqapi import ReqApi
-# from loader.loader import *
 
 
 def min_price_execute(message, city_name, count_hotels, cal_star, cal_finish, check_picture, max_count_pic):
