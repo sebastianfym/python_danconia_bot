@@ -26,7 +26,6 @@ def my_request(message: Message) -> None:
 
 @bot.message_handler(commands=['lowprice'])
 def low_price(message: Message) -> None:
-    sql_create_and_check_table('lowprice')
     bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
     bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Tver):")
     UserRequestState.low_price = True
@@ -34,7 +33,6 @@ def low_price(message: Message) -> None:
 
 @bot.message_handler(commands=['highprice'])
 def high_price(message: Message) -> None:
-    sql_create_and_check_table('highprice')
     bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
     bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Ontario):")
     UserRequestState.high_price = True
@@ -42,7 +40,6 @@ def high_price(message: Message) -> None:
 
 @bot.message_handler(commands=['bestdeal'])
 def best_deal(message: Message) -> None:
-    sql_create_and_check_table('bestdeal')
     bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
     bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Moscow):")
     UserRequestState.best_deal = True
@@ -57,9 +54,6 @@ def city_name(message: Message) -> None:
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['city_name'] = message.text
             data['list_with_date'] = list()
-            # data["user_id"] = message.from_user.id
-            # data["chat_id"] = message.chat.id
-            # data["message"] = message
     else:
         bot.send_message(message.chat.id, f'Название города может содержать в себе только бувы. Пожалуйста, повторите '
                                           f'попытку')
@@ -152,8 +146,6 @@ def handle_arrival_date(call: CallbackQuery):
                              reply_markup=calendar)
 
 
-
-
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func(calendar_id=2))
 def handle_arrival_date(call: CallbackQuery):
     today = date.today()
@@ -183,21 +175,16 @@ def handle_arrival_date(call: CallbackQuery):
                 show_result_finally_state(data['message'])
                 # bot.send_message(call.message.chat.id, 'Ваш запрос почти обработан! Введите дату и выберите "Да", '
                 #                                        'если хотите увидеть результат.')
-                show_result_finally_state(data["message"])
-
             elif int(str(second_date_date_format - first_date_date_format).split(' ')[0]) == 1:
                 data['days_between_dates'] = 2
 
                 # bot.send_message(call.message.chat.id, 'Ваш запрос почти обработан! Введите дату и выберите "Да", '
                 #                                        'если хотите увидеть результат.')
-                show_result_finally_state(data["message"])
             else:
                 data['days_between_dates'] = int(str(second_date_date_format - first_date_date_format).split(' ')[0])
 
                 # bot.send_message(call.message.chat.id, 'Ваш запрос почти обработан! Введите дату и выберите "Да", '
                 #                                        'если хотите увидеть результат')
-
-                show_result_finally_state(data["message"])
 
 
 @bot.message_handler(func=lambda message: message.text.lower() == "да", state=UserRequestState.check_photo)
@@ -214,17 +201,16 @@ def show_user_picture(message) -> None:
 @bot.message_handler(func=lambda message: message.text.lower() == "нет", state=UserRequestState.check_photo)
 def check_photo(message) -> None:
     bot.send_message(message.chat.id, "Как пожелаете.\n")
-    # user_id = message.from_user.id
-    # chat_id = message.message.chat.id
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['check_photo'] = False
         data['count_photo'] = 0
-        print(message.chat.id, 'message.chat.id\n', message, 'message')
         data["message_chat_id"] = message.chat.id
         data["user_id"] = message.from_user.id
         data["message"] = message
+        calendar_command(message)
+        # show_result(message, best_price_execute, max_price_execute, min_price_execute, data['check_in'],
+        #             data['check_out'])
 
-    calendar_command(message)
     bot.set_state(message.from_user.id, UserRequestState.show_result, message.chat.id)
 
 
@@ -243,8 +229,8 @@ def get_count_photo(message: Message) -> None:
 def show_result_no_state(message):
     bot.send_message(message.chat.id, "Очень жаль, я подготовил несколько хороших вариантов. Но Вы всегда можете "
                                       "еще обратиться ко мне! :)")
-#
-#
+
+
 @bot.message_handler(state=UserRequestState.show_result)
 def show_result_finally_state(message):
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
