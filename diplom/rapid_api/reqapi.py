@@ -150,10 +150,15 @@ class ReqApi:
             elif key == "name":
                 name = value
             elif key == 'address':
-                if value['streetAddress']:
-                    address = value['streetAddress']
-                else:
+                try:
+                    if value['streetAddress']:
+                        address = value['streetAddress']
+                    else:
+                        address = "Я не нашел точного адреса. Прошу меня простить"
+                except KeyError:
                     address = "Я не нашел точного адреса. Прошу меня простить"
+                finally:
+                    address = address
             elif key == "landmarks":
                 cycle = value[0]["distance"]
                 landmark = str()
