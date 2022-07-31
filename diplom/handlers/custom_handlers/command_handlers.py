@@ -26,7 +26,7 @@ def my_request(message: Message) -> None:
 @bot.message_handler(commands=['lowprice'])
 def low_price(message: Message) -> None:
     bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
-    bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Tver):")
+    bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Bangkok):")
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['price_state'] = 'low_price'
 
@@ -34,7 +34,7 @@ def low_price(message: Message) -> None:
 @bot.message_handler(commands=['highprice'])
 def high_price(message: Message) -> None:
     bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
-    bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Ontario):")
+    bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Barcelona):")
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['price_state'] = 'high_price'
 
@@ -42,7 +42,7 @@ def high_price(message: Message) -> None:
 @bot.message_handler(commands=['bestdeal'])
 def best_deal(message: Message) -> None:
     bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
-    bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Moscow):")
+    bot.send_message(message.chat.id, "Введите желаемый город для отдыха (Пример: Minsk):")
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['price_state'] = 'best_deal'
 
@@ -64,17 +64,17 @@ def city_name(message: Message) -> None:
 @bot.message_handler(state=UserRequestState.max_count_hotels)
 def max_count_hotels(message: Message) -> None:
     if message.text.isdigit():
-        if UserRequestState.best_deal is True:
-            bot.send_message(message.chat.id, f'Введите максимальную стоимость: ')
-            bot.set_state(message.from_user.id, UserRequestState.max_price_hotels, message.chat.id)
-
-        else:
-            bot.send_message(message.chat.id, f'Хотите ли Вы увидеть фото отелей?',
-                             reply_markup=markup())
-            bot.set_state(message.from_user.id, UserRequestState.check_photo, message.chat.id)
-
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['max_count_hotels'] = int(message.text)
+            if data['price_state'] == 'best_deal':
+                bot.send_message(message.chat.id, f'Введите максимальную стоимость: ')
+                bot.set_state(message.from_user.id, UserRequestState.max_price_hotels, message.chat.id)
+
+            else:
+
+                bot.send_message(message.chat.id, f'Хотите ли Вы увидеть фото отелей?',
+                                 reply_markup=markup())
+                bot.set_state(message.from_user.id, UserRequestState.check_photo, message.chat.id)
     else:
         bot.send_message(message.chat.id, f'Введите корректное число')
 
@@ -114,7 +114,7 @@ def distance_to_center(message: Message) -> None:
 
 
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func(calendar_id=1))
-def handle_arrival_date(call: CallbackQuery):
+def handle_arrival_date(call: CallbackQuery) -> None:
     today = date.today()
     result, key, step = get_calendar(calendar_id=1,
                                      current_date=today,
@@ -132,7 +132,7 @@ def handle_arrival_date(call: CallbackQuery):
         with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
             data['check_in'] = result
 
-            bot.edit_message_text(f"Дата заезда {result}",
+            bot.edit_message_text(f"Дата заезда: {result}",
                                   call.message.chat.id,
                                   call.message.message_id)
 
@@ -149,7 +149,7 @@ def handle_arrival_date(call: CallbackQuery):
 
 
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func(calendar_id=2))
-def handle_arrival_date(call: CallbackQuery):
+def handle_arrival_date(call: CallbackQuery) -> None:
     today = date.today()
 
     with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
@@ -166,27 +166,28 @@ def handle_arrival_date(call: CallbackQuery):
                                   call.message.message_id,
                                   reply_markup=key)
         elif result:
-
             data['check_out'] = result
+            bot.edit_message_text(f"Дата выезда: {result}", call.message.chat.id, call.message.message_id)
 
             first_date_str, second_date_str = str(data['check_in']).split('-'), str(data['check_out']).split('-')
             first_date_date_format = datetime(int(first_date_str[0]), int(first_date_str[1]), int(first_date_str[2]))
-            second_date_date_format = datetime(int(second_date_str[0]), int(second_date_str[1]), int(second_date_str[2]))
+            second_date_date_format = datetime(int(second_date_str[0]), int(second_date_str[1]),
+                                               int(second_date_str[2]))
 
             if str(second_date_date_format - first_date_date_format).split(' ')[0] == '0:00:00':
                 data['days_between_dates'] = 1
                 show_result(data["message"], best_price_execute, max_price_execute, min_price_execute, data['check_in'],
-                            result)
+                            result, data['max_count_hotels'], data['days_between_dates'])
 
             elif int(str(second_date_date_format - first_date_date_format).split(' ')[0]) == 1:
                 data['days_between_dates'] = 2
                 show_result(data["message"], best_price_execute, max_price_execute, min_price_execute, data['check_in'],
-                            result)
-                
+                            result, data['max_count_hotels'], data['days_between_dates'])
+
             else:
                 data['days_between_dates'] = int(str(second_date_date_format - first_date_date_format).split(' ')[0])
                 show_result(data["message"], best_price_execute, max_price_execute, min_price_execute, data['check_in'],
-                            result)
+                            result, data['max_count_hotels'], data['days_between_dates'])
 
 
 @bot.message_handler(func=lambda message: message.text.lower() == "да", state=UserRequestState.check_photo)
@@ -216,10 +217,11 @@ def check_photo(message) -> None:
 
 @bot.message_handler(state=UserRequestState.get_count_photo)
 def get_count_photo(message: Message) -> None:
-    bot.set_state(message.from_user.id, UserRequestState.show_result, message.chat.id)
-    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        data['count_photo'] = int(message.text)
-    calendar_command(message)
-    bot.set_state(message.from_user.id, UserRequestState.show_result, message.chat.id)
-
-
+    if message.text.isdigit():
+        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+            data['count_photo'] = int(message.text)
+        calendar_command(message)
+        bot.set_state(message.from_user.id, UserRequestState.show_result, message.chat.id)
+    else:
+        bot.send_message(message.chat.id, f'Введите корректное число')
+        bot.set_state(message.from_user.id, UserRequestState.get_count_photo, message.chat.id)

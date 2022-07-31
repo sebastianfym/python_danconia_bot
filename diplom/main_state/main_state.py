@@ -12,8 +12,6 @@ class UserRequestState(StatesGroup):
     show_result = State()
     get_count_photo = State()
 
-    list_with_date = []
-
 
 class DateRangeState(StatesGroup):
     check_in = State()

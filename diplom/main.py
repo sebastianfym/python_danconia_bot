@@ -11,3 +11,5 @@ if __name__ == '__main__':
     sql_create_and_check_table('highprice')
     sql_create_and_check_table('bestdeal')
     bot.infinity_polling(interval=0, timeout=10)
+
+
