@@ -59,6 +59,7 @@ def city_name(message: Message) -> None:
     else:
         bot.send_message(message.chat.id, f'Название города может содержать в себе только бувы. Пожалуйста, повторите '
                                           f'попытку')
+        bot.set_state(message.from_user.id, UserRequestState.city_name, message.chat.id)
 
 
 @bot.message_handler(state=UserRequestState.max_count_hotels)
@@ -77,6 +78,7 @@ def max_count_hotels(message: Message) -> None:
                 bot.set_state(message.from_user.id, UserRequestState.check_photo, message.chat.id)
     else:
         bot.send_message(message.chat.id, f'Введите корректное число')
+        bot.set_state(message.from_user.id, UserRequestState.max_count_hotels, message.chat.id)
 
 
 @bot.message_handler(state=UserRequestState.max_price_hotels)
@@ -89,6 +91,7 @@ def max_price_hotels(message: Message) -> None:
             data['max_price_hotels'] = int(message.text)
     else:
         bot.send_message(message.chat.id, f'Введите корректное число')
+        bot.set_state(message.from_user.id, UserRequestState.max_price_hotels, message.chat.id)
 
 
 @bot.message_handler(state=UserRequestState.min_price_hotels)
@@ -100,6 +103,7 @@ def min_price_hotels(message: Message) -> None:
             data['min_price_hotels'] = int(message.text)
     else:
         bot.send_message(message.chat.id, f'Введите корректное число')
+        bot.set_state(message.from_user.id, UserRequestState.min_price_hotels, message.chat.id)
 
 
 @bot.message_handler(state=UserRequestState.distance_to_center)
@@ -111,6 +115,7 @@ def distance_to_center(message: Message) -> None:
             data['distance_to_center'] = int(message.text)
     else:
         bot.send_message(message.chat.id, f'Введите корректное число')
+        bot.set_state(message.from_user.id, UserRequestState.distance_to_center, message.chat.id)
 
 
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func(calendar_id=1))
